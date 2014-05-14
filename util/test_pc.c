@@ -10,12 +10,15 @@
 
 int main(void) {
 	char test[] = "19123.45";
+	char number[7] = { 0 };
+
 	int len = sizeof(test) - 1;
 	uint32_t result;
 	uint8_t decimal_pos;
 
 	uint32_t integer;
 	uint32_t decimal;
+
 
 	printf("Test String: %s\n", test);
 	printf("Length: %d\n", len);
@@ -29,5 +32,10 @@ int main(void) {
 	
 	atoi32(test, len, &integer);
 	printf("Integer Portion: %zu\n", integer);
+	
+	integer = 300;
+
+	i32toa(integer, 6, number);
+	printf("Number %s\n", number);
 
 }

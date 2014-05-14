@@ -63,7 +63,12 @@ void atoi32(char *string, uint8_t len, uint32_t *integer) {
 	}
 }
 
-/* void atoi16(char *string, uint8_t len, uint8_t *decimal_pos, uint16_t *i) */
-/* void atoi8(char *string, uint8_t len, uint8_t *decimal_pos, uint8_t *i) */
+void i32toa(uint32_t in, uint8_t len, char *out) {
+	uint8_t i;
+	uint32_t mult = 1;
+	for (i = len; i > 0; i--) {
+		*(out + i - 1) = ((in % (mult*10)) / mult) + 48;
+		mult *= 10;
+	}
+}
 
-void i8toa(uint8_t i, uint8_t len, char *a); 
