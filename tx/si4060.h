@@ -5,13 +5,13 @@
  *
  */
 
+#define CTS			0xff
+#define XO_FREQ			30000000UL
+
 /* ===== command definitions ===== */
 #define CMD_POWER_UP		0x02
 #define CMD_NOP			0x00
-#define CMD_PART_INFO		0x01
-#define CMD_FUNC_INFO		0x10
 #define CMD_SET_PROPERTY	0x11
-#define CMD_GET_PROPERTY	0x12
 #define CMD_GPIO_PIN_CFG	0x13
 #define CMD_READ_CMD_BUF	0x44
 #define CMD_START_TX		0x31
@@ -59,10 +59,10 @@
 /* ===== command arguments ===== */
 /* POWER_UP arguments */
 /* byte 1 */
-#define PATCH 		0x80 	/* set patch mode */
-#define FUNC		0x01 	/* power on device */
+#define PATCH 		(0x01 << 7) 	/* set patch mode */
+#define FUNC		0x01 		/* power on device */
 /* byte 2 */	
-#define TXCO		0x01	/* select if TXCO (1) or crystal (0) is used */
+#define TXCO		0x01		/* select if TXCO (1) or crystal (0) is used */
 
 /* GPIO_PIN_CFG arguments */
 /* bytes 1 .. 6 */
