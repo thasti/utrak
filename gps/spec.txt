@@ -46,4 +46,6 @@ field information:
 	- altitude
 		- variable integer portion, decimal point, variable fraction
 
+for new telemetry format: see http://ukhas.org.uk/communication:protocol
+
 
