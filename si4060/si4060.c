@@ -159,7 +159,6 @@ void si4060_setup(void) {
 	si4060_set_property_8(PROP_PA,
 			PA_BIAS_CLKDUTY,
 			PA_BIAS_CLKDUTY_SIN_25);			
-	/* TODO set the SYNTH properties ?? */
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
