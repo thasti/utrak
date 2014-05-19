@@ -120,6 +120,10 @@ void si4060_start_tx(uint8_t channel) {
 }
 
 void si4060_setup(void) {
+	/* debug */
+	unsigned int a = FDIV_INTE;
+	unsigned int b = FDIV_FRAC;
+	
 	/* set high performance mode */
 	si4060_set_property_8(PROP_GLOBAL, 
 			GLOBAL_CONFIG, 	
@@ -162,10 +166,11 @@ void si4060_setup(void) {
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
-			/* TODO */ 56);
+			FDIV_INTE);
 	/* set up the fractional divider */
 	si4060_set_property_24(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_FRAC,
-			/* TODO */ (1 << 19) + 459626);
+			FDIV_FRAC);
 	/* TODO set the channel step size (if SPI frequency changing is used) */
+
 }
