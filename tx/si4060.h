@@ -32,6 +32,8 @@
 /* global properties */
 #define GLOBAL_XO_TUNE		0x00
 #define GLOBAL_CONFIG		0x03
+/* preamble properties */
+#define PREAMBLE_TX_LENGTH	0x00
 /* sync properties */
 #define SYNC_CONFIG		0x11
 /* modem properties */
@@ -51,8 +53,10 @@
 #define SYNTH_LPFILT0		0x06
 #define SYNTH_VCO_KVCAL		0x07
 /* frequency control properties */
+/* INTE shall be decreased by 1, because FRAC shall be between 1 and 2 */
 #define FREQ_CONTROL_INTE	0x00
-#define FREQ_CONTROL_FRAQ	0x01
+/* FRAC shall be added to 2**19, to ensure MSB is set! */
+#define FREQ_CONTROL_FRAC	0x01
 #define FREQ_CONTROL_CHANNEL_STEP_SIZE	0x04
 #define FREQ_CONTROL_W_SIZE	0x06
 
@@ -113,8 +117,8 @@
 /* GLOBAL_CONFIG values */
 #define POWER_MODE_LOW_POWER	0x00	/* default */
 #define POWER_MODE_HIGH_PERF	0x01
-#define SEQUENCER_MODE_FAST	0x00	/* default */
-#define SEQUENCER_MODE_GUARANT	0x01
+#define SEQUENCER_MODE_FAST	(0x00 << 5)	/* default */
+#define SEQUENCER_MODE_GUARANT	(0x01 << 5)
 /* SYNC_CONFIG values */
 #define SYNC_XMIT		(0x00 << 7)	/* default */
 #define SYNC_NO_XMIT		(0x01 << 7)
@@ -145,6 +149,7 @@
 #define FVCO_DIV_24		0x05
 #define FVCO_DIV_24_2		0x06
 #define FVCO_DIV_24_3		0x07
+/* PA_BIAS_CLKDUTY values */
 #define PA_BIAS_CLKDUTY_SIN_25	(0x03 << 6) /* for si4060  */
 
 
