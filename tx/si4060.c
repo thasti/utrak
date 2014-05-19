@@ -124,6 +124,13 @@ void si4060_setup(void) {
 	si4060_set_property_8(PROP_GLOBAL, 
 			GLOBAL_CONFIG, 	
 			POWER_MODE_HIGH_PERF | SEQUENCER_MODE_GUARANT);
+	/* set up GPIOs */
+	si4060_gpio_pin_cfg(GPIO_MODE_INPUT,
+			GPIO_MODE_DONOTHING,
+			GPIO_MODE_DONOTHING,
+			GPIO_MODE_DONOTHING,
+			DRV_STRENGTH_LOW);
+			
 	/* disable preamble */
 	si4060_set_property_8(PROP_PREAMBLE,
 			PREAMBLE_TX_LENGTH,
