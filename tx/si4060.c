@@ -7,6 +7,11 @@
  *
  */
 
+#include <inttypes.h>
+#include "spi.h"
+#include "si4060.h"
+
+
 uint8_t si4060_read_cmd_buf(void) {
 	uint8_t ret;
 	spi_select();
@@ -21,10 +26,10 @@ void si4060_power_up(void) {
 	spi_write(CMD_POWER_UP);
 	spi_write(FUNC);
 	spi_write(0x00);
-	spi_write(XO_FREQ >> 24);
-	spi_write(XO_FREQ >> 16);
-	spi_write(XO_FREQ >> 8);
-	spi_write(XO_FREQ);
+	spi_write((uint8_t) XO_FREQ >> 24);
+	spi_write((uint8_t) XO_FREQ >> 16);
+	spi_write((uint8_t) XO_FREQ >> 8);
+	spi_write((uint8_t) XO_FREQ);
 	spi_deselect();
 	/* wait for CTS */
 	while (!(si4060_read_cmd_buf()));
@@ -114,3 +119,47 @@ void si4060_start_tx(uint8_t channel) {
 
 }
 
+void si4060_setup(void) {
+	/* set high performance mode */
+	si4060_set_property_8(PROP_GLOBAL, 
+			GLOBAL_CONFIG, 	
+			POWER_MODE_HIGH_PERF | SEQUENCER_MODE_GUARANT);
+	/* disable preamble */
+	si4060_set_property_8(PROP_PREAMBLE,
+			PREAMBLE_TX_LENGTH,
+			0);
+	/* do not transmit sync word */
+	si4060_set_property_8(PROP_SYNC,
+			SYNC_CONFIG,
+			SYNC_NO_XMIT);
+	/* use 2FSK from async GPIO0 */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_MOD_TYPE,
+			MOD_TYPE_2FSK | MOD_SOURCE_DIRECT | MOD_GPIO_0 | MOD_DIRECT_MODE_ASYNC);
+	/* setup frequency deviation */
+	si4060_set_property_24(PROP_MODEM,
+			MODEM_FREQ_DEV,
+			/* TODO*/ 10);
+	/* setup frequency deviation offset */
+	si4060_set_property_16(PROP_MODEM,
+			MODEM_FREQ_OFFSET,
+			0x0000);
+	/* setup divider to 8 (for 70cm ISM band */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_CLKGEN_BAND,
+			SY_SEL_1 | FVCO_DIV_8);
+	/* set up the PA duty cycle */
+	si4060_set_property_8(PROP_PA,
+			PA_BIAS_CLKDUTY,
+			PA_BIAS_CLKDUTY_SIN_25);			
+	/* TODO set the SYNTH properties ?? */
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			/* TODO */ 56);
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			/* TODO */ (1 << 19) + 459626);
+	/* TODO set the channel step size (if SPI frequency changing is used) */
+}
