@@ -32,14 +32,23 @@ void si4060_power_up(void) {
 	spi_write((uint8_t) XO_FREQ);
 	spi_deselect();
 	/* wait for CTS */
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
+}
+
+void si4060_change_state(uint8_t state) {
+	spi_select();
+	spi_write(CMD_CHANGE_STATE);
+	spi_write(state);
+	spi_deselect();
+	while (~si4060_read_cmd_buf());
+
 }
 
 void si4060_nop(void) {
 	spi_select();
 	spi_write(CMD_NOP);
 	spi_deselect();
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
 }
 
 void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
@@ -50,7 +59,7 @@ void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
 	spi_write(prop);
 	spi_write(val);
 	spi_deselect();
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
 }
 
 void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
@@ -62,7 +71,7 @@ void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
 }
 
 void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
@@ -75,7 +84,7 @@ void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
 }
 
 void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
@@ -89,7 +98,7 @@ void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
 }
 
 void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gpio3, uint8_t drvstrength) {
@@ -103,7 +112,7 @@ void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gp
 	spi_write(SDO_MODE_DONOTHING);
 	spi_write(drvstrength);
 	spi_deselect();
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
 }
 
 void si4060_start_tx(uint8_t channel) {
@@ -115,8 +124,11 @@ void si4060_start_tx(uint8_t channel) {
 	spi_write(0x00);
 	spi_write(0x00);
 	spi_deselect();
-	while (!(si4060_read_cmd_buf()));
+	while (~si4060_read_cmd_buf());
+}
 
+void si4060_stop_tx(void) {
+	si4060_change_state(STATE_SLEEP);
 }
 
 void si4060_setup(void) {
@@ -127,7 +139,7 @@ void si4060_setup(void) {
 	/* set high performance mode */
 	si4060_set_property_8(PROP_GLOBAL, 
 			GLOBAL_CONFIG, 	
-			POWER_MODE_HIGH_PERF | SEQUENCER_MODE_GUARANT);
+			GLOBAL_RESERVED | POWER_MODE_HIGH_PERF | SEQUENCER_MODE_FAST);
 	/* set up GPIOs */
 	si4060_gpio_pin_cfg(GPIO_MODE_INPUT,
 			GPIO_MODE_DONOTHING,

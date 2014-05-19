@@ -17,8 +17,17 @@
 #define CMD_NOP			0x00
 #define CMD_SET_PROPERTY	0x11
 #define CMD_GPIO_PIN_CFG	0x13
+#define CMD_CHANGE_STATE	0x34
 #define CMD_READ_CMD_BUF	0x44
 #define CMD_START_TX		0x31
+
+/* ===== device states ===== */
+#define STATE_NOCHANGE		0x00
+#define STATE_SLEEP		0x01
+#define STATE_SPI_ACTIVE	0x02
+#define STATE_READY		0x03
+#define STATE_TX_TUNE		0x05
+#define STATE_TX		0x07
 
 /* ===== property group definitions ===== */
 #define PROP_GLOBAL		0x00
@@ -119,6 +128,7 @@
 
 /* ===== property values ===== */
 /* GLOBAL_CONFIG values */
+#define GLOBAL_RESERVED		(0x01 << 7) /* shall be set to 1 */
 #define POWER_MODE_LOW_POWER	0x00	/* default */
 #define POWER_MODE_HIGH_PERF	0x01
 #define SEQUENCER_MODE_FAST	(0x00 << 5)	/* default */
