@@ -5,9 +5,12 @@
  *
  */
 
-#include <stdio.h>
 #include <inttypes.h>
 
+/* atoid32
+ * converts a fixed-length input string to 32bit integers, 
+ * containing respective integer and decimal parts of input string
+ */
 void atoid32(char *string, uint8_t len, uint32_t *integer, uint32_t *decimal) {
 	uint8_t j;
 	uint32_t mult = 1;
@@ -21,15 +24,18 @@ void atoid32(char *string, uint8_t len, uint32_t *integer, uint32_t *decimal) {
 			int_port = 1;
 		} else {
 			if (int_port) {
-				*integer += mult * (*(string + len - j - 1) - 48);
+				*integer += mult * (*(string + len - j - 1) - '0');
 			} else {
-				*decimal += mult * (*(string + len - j - 1) - 48);
+				*decimal += mult * (*(string + len - j - 1) - '0');
 			}
 			mult *= 10;
 		}
 	}
 }
 
+/* atod32
+ * converts a fixed-length input string to 32bit integer, representing its decimal part,
+ */
 void atod32(char *string, uint8_t len, uint32_t *decimal) {
 	uint8_t j;
 	uint32_t mult = 1;
@@ -39,12 +45,16 @@ void atod32(char *string, uint8_t len, uint32_t *decimal) {
 		if (*(string + len - j - 1) == '.') {
 			return;
 		} else {
-			*decimal += mult * (*(string + len - j - 1) - 48);
+			*decimal += mult * (*(string + len - j - 1) - '0');
 			mult *= 10;
 		}
 	}
 }
 
+/* atoi32
+ * converts a fixed-length input string to 32bit integer, stops at decimal points,
+ * so only integer part is returned
+ */
 void atoi32(char *string, uint8_t len, uint32_t *integer) {
 	uint8_t j;
 	uint32_t mult = 1;
@@ -56,19 +66,40 @@ void atoi32(char *string, uint8_t len, uint32_t *integer) {
 			start = 1;
 		} else {
 			if (start) {
-				*integer += mult * (*(string + len - j - 1) - 48);
+				*integer += mult * (*(string + len - j - 1) - '0');
 				mult *= 10;
 			}
 		}
 	}
 }
 
+/* i32toa
+ * 32 bit number to fixed-length output char
+ */
 void i32toa(uint32_t in, uint8_t len, char *out) {
 	uint8_t i;
 	uint32_t mult = 1;
 	for (i = len; i > 0; i--) {
-		*(out + i - 1) = ((in % (mult*10)) / mult) + 48;
+		*(out + i - 1) = ((in % (mult*10)) / mult) + '0';
 		mult *= 10;
+	}
+}
+
+/* i16tox
+ * 16 bit number to hexadecimal char representation
+ *
+ * writes 4 chars to the output pointer
+ */
+void i16tox(uint16_t x, char *out) {
+	uint8_t i;
+	uint8_t tmp;
+	for (i = 0; i < 4; i++) {
+		tmp = (uint8_t) ((x >> (4*i)) & 0x000f);
+		if (tmp < 10) {
+			*(out+3-i) = '0' + tmp;
+		} else {
+			*(out+3-i) = 'A' + tmp - 10;
+		}
 	}
 }
 

@@ -38,4 +38,14 @@ int main(void) {
 	i32toa(integer, 6, number);
 	printf("Number %s\n", number);
 
+	char tohex[4] = "0000";
+	uint16_t hex = 0x20af;
+	uint8_t i;
+	i16tox(hex, tohex);
+	printf("%x to hex: ", hex);
+	for (i = 0; i < 4; i++) {
+		printf("%c", tohex[i]);
+	}
+	printf("\n");
+
 }
