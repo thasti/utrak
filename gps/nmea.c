@@ -31,6 +31,9 @@ uint8_t GPGGAGetData(char *sentence, char *lat, char *lon, char *alt) {
 	uint8_t len = 0;
 	uint32_t alt_i = 0;
 
+	char *lat_cpy = lat;
+	char *lon_cpy = lon;
+
 	/* one sentence is max. 83 characters */
 	for (i = 0; i < 83 && (*(sentence + i) != '\n'); i++) {
 		len++;
@@ -39,20 +42,26 @@ uint8_t GPGGAGetData(char *sentence, char *lat, char *lon, char *alt) {
 		if (*(sentence + i) == ',') {
 			switch (field) {
 				case LAT_FIELD:
+					*(lat++) = '+';
 					for (tmp = 0; tmp < 7; tmp++) {
 						*(lat++) = *(sentence + i - len + 1 + tmp);
 					}
 					break;
 				case NS_FIELD:
-					*lat = *(sentence + i - 1);
+					if (*(sentence + i - 1) == 'S') {
+						*lat_cpy = '-';
+					}
 					break;
 				case LON_FIELD:
+					*(lon++) = '+';
 					for (tmp = 0; tmp < 8; tmp++) {
 						*(lon++) = *(sentence + i - len + 1 + tmp);
 					}
 					break;
 				case EW_FIELD:
-					*lon = *(sentence + i - 1);
+					if (*(sentence + i - 1) == 'W') {
+						*lon_cpy = '-';
+					}
 					break;
 				case FIX_FIELD:
 					if (*(sentence + i - 1) == '0') 
