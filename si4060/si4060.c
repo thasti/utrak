@@ -8,6 +8,7 @@
  */
 
 #include <inttypes.h>
+#include <stdio.h>
 #include "spi.h"
 #include "si4060.h"
 
@@ -162,7 +163,7 @@ void si4060_setup(void) {
 	/* setup frequency deviation */
 	si4060_set_property_24(PROP_MODEM,
 			MODEM_FREQ_DEV,
-			/* TODO*/ 10);
+			(uint32_t)FDEV);
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
@@ -178,11 +179,11 @@ void si4060_setup(void) {
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
-			FDIV_INTE);
+			(uint8_t)FDIV_INTE);
 	/* set up the fractional divider */
 	si4060_set_property_24(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_FRAC,
-			FDIV_FRAC);
+			(uint32_t)FDIV_FRAC);
 	/* TODO set the channel step size (if SPI frequency changing is used) */
 
 }
