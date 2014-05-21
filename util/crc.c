@@ -7,7 +7,7 @@
 
 #include <inttypes.h>
 
-static __inline__ uint16_t crc_xmodem_update(uint16_t crc, uint8_t data) {
+inline uint16_t crc_xmodem_update(uint16_t crc, uint8_t data) {
 	int i;
 
 	crc = crc ^ ((uint16_t)data << 8);
