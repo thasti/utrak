@@ -1,3 +1,6 @@
+SRC_ALL=../util/string.c nmea.c
+TEST_BIN=test_pc
+
 test-pc: 
-	$(CC) -otest_pc ../util/string.c nmea.c test_pc.c
+	$(CC) -o$(TEST_BIN) $(SRC_ALL) $(TEST_BIN).c
 
