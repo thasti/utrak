@@ -8,20 +8,20 @@
 #include <inttypes.h>
 
 void spi_select(void) {
-	printf("SPI: Slave selected\n");
+	printf("[ ");
 }
 
 void spi_deselect(void) {
-	printf("SPI: Slave deselected\n");
+	printf("] ");
 }
 
 void spi_write(uint8_t data) {
-	printf("SPI: Write %x\n", data);
+	printf("0x%x ", data);
 }
 
 uint8_t spi_read(void) {
 	uint8_t tmp = 0xff;
-	printf("SPI: Read %x\n", tmp);
+	printf("r ", tmp);
 	return tmp;
 }
 
