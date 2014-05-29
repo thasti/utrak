@@ -8,7 +8,7 @@
 #include <inttypes.h>
 
 #include "nmea.h"
-#include "../util/string.h"
+#include "string.h"
 
 uint8_t NMEAsentenceIsGPGGA(char *sentence) {
 	uint8_t i;

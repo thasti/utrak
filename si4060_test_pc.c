@@ -5,7 +5,7 @@
  * Stefan Biereigel
  *
  */
-
+#ifdef TEST
 #include <stdio.h>
 
 int main(void) {
@@ -19,3 +19,4 @@ int main(void) {
 	si4060_start_tx(0);
 	printf("\n");
 }
+#endif

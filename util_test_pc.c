@@ -4,6 +4,7 @@
  * Stefan Biereigel
  */
 
+#ifdef TEST
 #include <stdio.h>
 #include <inttypes.h>
 #include "string.h"
@@ -66,3 +67,4 @@ int main(void) {
 	}
 	printf("\n");
 }
+#endif

@@ -4,7 +4,7 @@
  * Stefan Biereigel
  *
  */
-
+#ifdef TEST
 #include <stdio.h>
 #include "nmea.h"
 
@@ -39,3 +39,4 @@ int main(void) {
 	}
 	return 0;
 }
+#endif

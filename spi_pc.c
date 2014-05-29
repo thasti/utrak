@@ -3,6 +3,7 @@
  *
  * Stefan Biereigel
  */
+#ifdef TEST 
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -24,4 +25,4 @@ uint8_t spi_read(void) {
 	printf("r ", tmp);
 	return tmp;
 }
-
+#endif
