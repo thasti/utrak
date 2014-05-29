@@ -1,5 +1,5 @@
 TARGET   := main.elf
-CXXFLAGS := -g -O0 -Wall -mmcu=msp430fr5739 
+CXXFLAGS := -g -Os -Wall -mmcu=msp430fr5739
 CXX      := msp430-gcc
 LIBS     :=
 EXT      := c
