@@ -8,7 +8,7 @@
 /* Port 1 */
 #define SI_SHDN	BIT1
 #define SI_DATA	BIT2
-#define CS
+#define CS	BIT3
 #define MOSI	BIT6
 #define MISO	BIT7
 

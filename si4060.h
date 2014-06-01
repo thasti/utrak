@@ -10,18 +10,28 @@
 #define RF_DEV_HZ		500.0f
 #define F_INT			(2 * XO_FREQ / 8)
 #define FDIV_INTE		((RF_FREQ_HZ / F_INT) - 1)
-#define FDIV_FRAC		((RF_FREQ_HZ - F_INT * (int)FDIV_INTE)*(1 << 19)) / F_INT
-#define FDEV			(((1 << 19) * 8 * RF_DEV_HZ)/(2*XO_FREQ))
+#define FDIV_FRAC		((RF_FREQ_HZ - F_INT * (int)FDIV_INTE)*((uint32_t)1 << 19)) / F_INT
+#define FDEV			((((uint32_t)1 << 19) * 8 * RF_DEV_HZ)/(2*XO_FREQ))
 
+/* function prototypes */
+void si4060_power_up(void);
+void si4060_nop(void);
+void si4060_start_tx(uint8_t channel);
+void si4060_stop_tx(void);
+void si4060_setup(void);
+uint8_t si4060_get_property_8(uint8_t group, uint8_t prop);
+uint8_t si4060_part_info(void);
 
 /* ===== command definitions ===== */
-#define CMD_POWER_UP		0x02
 #define CMD_NOP			0x00
+#define CMD_PART_INFO		0x01
+#define CMD_POWER_UP		0x02
 #define CMD_SET_PROPERTY	0x11
+#define CMD_GET_PROPERTY	0x12
 #define CMD_GPIO_PIN_CFG	0x13
+#define CMD_START_TX		0x31
 #define CMD_CHANGE_STATE	0x34
 #define CMD_READ_CMD_BUF	0x44
-#define CMD_START_TX		0x31
 
 /* ===== device states ===== */
 #define STATE_NOCHANGE		0x00

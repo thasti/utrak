@@ -8,6 +8,11 @@
 #include <msp430.h>
 #include <inttypes.h>
 #include "main.h"
+#include "si4060.h"
+#include "spi.h"
+#include "string.h"
+
+volatile uint16_t adc_result;
 
 /* 
  * hardware initialisation
@@ -30,6 +35,7 @@
 void hw_init(void) {
 	/* DEBUG */
 	P3DIR |= BIT4 + BIT5 + BIT6 + BIT7;
+	P3OUT |= BIT4 + BIT5 + BIT6 + BIT7;
 	/* DCO init */
 	/* SMCLK 5.37MHz, divided by 8 */
 	CSCTL0_H = 0xA5;					/* write CS password */
@@ -38,11 +44,12 @@ void hw_init(void) {
 	CSCTL3 = DIVA__8 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 	/* GPIO init */
-	P1DIR = SI_SHDN + SI_DATA + CS + MOSI;	/* GPIOs for output */
+	P1DIR = CS;		/* GPIOs for output */
   	P1SEL1 |= MOSI + MISO;			/* USCI_B MOSI, MISO */ 
-  	P1SEL0 &= ~(MOSI + MISO); 		/* USCI_B MOSI, MISO */
+	P1SEL1 &= ~(SI_SHDN + SI_DATA + CS); 
+  	P1SEL0 &= ~(SI_SHDN + SI_DATA + CS + MOSI + MISO);	/* USCI_B MOSI, MISO */
 	
-	P2DIR = TXD + SCLK;			/* GPIOs for output */
+	P2DIR = TXD;				/* GPIOs for output */
 	P2SEL1 |= RXD + TXD + SCLK;		/* USCI_A RXD, TXD, USCI_B CLK */
 	P2SEL0 &= ~(RXD + TXD + SCLK);		/* USCI_A RXD, TXD, USCI_B CLK */
 
@@ -56,33 +63,39 @@ void hw_init(void) {
 	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
 
 	/* USCI_B init */
-	//UCB0CTLW0 |= UCSWRST;			/* Put state machine in reset */
-	//UCB0CTLW0 |= UCMST+UCSYNC+UCCKPL+UCMSB;	/* 3-pin, 8-bit SPI master */
+	UCB0CTLW0 = UCSWRST;			/* Put state machine in reset */
+	UCB0CTLW0 |= UCMST+UCSYNC+UCCKPH+UCMSB;	/* 3-pin, 8-bit SPI master */
 						/* Clock polarity high, MSB */
-	//UCB0CTLW0 |= UCSSEL_1;			/* SMCLK */
-	//UCB0BR0 = 0x02;				/* divide by /2 */
-	//UCB0BR1 = 0;
-	//UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
+	UCB0CTLW0 |= UCSSEL_1;			/* SMCLK */
+	UCB0BR0 = 0xff;				/* divide by /2 */
+	UCB0BR1 = 2;
+	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
+	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
 
 	/* Enable Interrupts */
 	__bis_SR_register(GIE);			/* set interrupt enable bit */
 }
 
 uint16_t getBatteryVoltage(void) {
+	uint16_t i;
 	uint16_t voltage;
 	/* enable ADC */
 	ADC10CTL0 = ADC10SHT_2 + ADC10ON;	/* ADC10ON, S&H=16 ADC clks */
-	ADC10CTL1 = ADC10SHP;			/* ADCCLK = MODOSC; sampling timer */
+	ADC10CTL1 = ADC10SHP + ADC10SSEL0 + ADC10SSEL1;		/* ADCCLK = SMCLK */
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
 	ADC10MCTL0 = ADC10INCH_1;		/* A1 ADC input select; Vref=AVCC */
-	ADC10CTL0 = ADC10ENC + ADC10SC;		/* Sampling and conversion start */
 	ADC10IE = ADC10IE0;			/* Enable ADC conv complete interrupt */
-    	__bis_SR_register(CPUOFF + GIE);	/* LPM0, ADC10_ISR will force exit */
-    	__no_operation();			
+	__delay_cycles(5000);			/* Delay for Ref to settle */
+	voltage = 0;
+	for (i = 0; i < 10; i++) {
+		ADC10CTL0 |= ADC10ENC + ADC10SC;	/* Sampling and conversion start */
+    		__bis_SR_register(CPUOFF + GIE);	/* LPM0, ADC10_ISR will force exit */
 	
-	/* take ADC reading */
-	voltage = ADC10MEM0 * 32;		/* convert to mV */
-
+		/* take ADC reading */
+		voltage += adc_result * 32 / 10;		/* convert to mV */
+		
+	}
+	voltage /= 10;
 	/* disable ADC */
 	ADC10IE &= ~ADC10IE0;			/* Enable ADC conv complete interrupt */
 	ADC10CTL0 &= ~ADC10ON;			/* ADC10 off */
@@ -91,30 +104,27 @@ uint16_t getBatteryVoltage(void) {
 }
 
 uint16_t getTemperature(void) {
-	uint16_t temperature;
+	long temperature;
 
 	/* enable ADC */
 	// Configure ADC10 - Pulse sample mode; ADC10SC trigger
 	ADC10CTL0 = ADC10SHT_8 + ADC10ON;	/* 16 ADC10CLKs; ADC ON,temperature sample period>30us */
-	ADC10CTL1 = ADC10SHP + ADC10CONSEQ_0;	/* s/w trig, single ch/conv */
+	ADC10CTL1 = ADC10SHP + ADC10SSEL0 + ADC10SSEL1;	/* s/w trig, single ch/conv */
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
 	ADC10MCTL0 = ADC10SREF_1 + ADC10INCH_10;/* ADC input ch A10 => temp sense */
+	ADC10IE |= ADC10IE0;			/* enable the Interrupt */
   
 	/* Configure internal reference */
 	while(REFCTL0 & REFGENBUSY);		/* If ref generator busy, WAIT */
 	REFCTL0 |= REFVSEL_0+REFON;		/* Select internal ref = 1.5V */
-						/* Internal Reference ON */
-	ADC10IE |= ADC10IE0;			/* enable the Interrupt */
   
 	__delay_cycles(400);			/* Delay for Ref to settle */
 
 	/* take ADC reading */
 	ADC10CTL0 |= ADC10ENC + ADC10SC;        /* Sampling and conversion start */
 	__bis_SR_register(CPUOFF + GIE);	/* CPU off with interrupts enabled */
-	/* TODO was LPM4 - does that make a difference? */
-	__no_operation();
-
-	temperature = (ADC10MEM0 - CALADC10_15V_30C) *  (85-30) / (CALADC10_15V_85C-CALADC10_15V_30C) + 30;
+	temperature = adc_result;
+	temperature = (temperature - CALADC10_15V_30C) *  (85-30) / (CALADC10_15V_85C-CALADC10_15V_30C) + 30;
 
 	/* disable ADC */
 	REFCTL0 &= ~REFON;			/* disable internal ref */
@@ -125,12 +135,28 @@ uint16_t getTemperature(void) {
 }
 
 int main(void) {
+	uint8_t i;
+	uint16_t temp;
+	char string[4];
 	/* disable watchdog timer */
 	WDTCTL = WDTPW + WDTHOLD;
 	/* init all hardware components */
 	hw_init();
-	while(1);
-
+	si4060_power_up();
+	si4060_setup();
+	si4060_start_tx(0);
+	P3OUT &= ~(BIT6);
+	while(1) {
+		//for(i = 0; i < 65535; i++);
+		i = si4060_get_property_8(PROP_GLOBAL, GLOBAL_CONFIG);
+		P3OUT ^= (BIT5);
+		//if (P1IN & BIT0) {
+		if (i == 0xff) {
+			P3OUT |= (BIT7);
+		} else {
+			P3OUT &= ~(BIT7);
+		}
+	}
 }
 
 /* USCI A0 ISR
@@ -155,6 +181,7 @@ __interrupt void USCI_A0_ISR(void)
 	}
 }
 
+
 /* ADC10 ISR
  *
  * just resumes CPU operation, as ADC conversions are done in CPUOFF-state 
@@ -163,6 +190,7 @@ __interrupt void USCI_A0_ISR(void)
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
 {
+  P3OUT ^= 0xff;
   switch(ADC10IV)
   {
     case  0: break;                          // No interrupt
@@ -171,7 +199,8 @@ __interrupt void ADC10_ISR(void)
     case  6: break;                          // ADC10HI
     case  8: break;                          // ADC10LO
     case 10: break;                          // ADC10IN
-    case 12: __bic_SR_register_on_exit(CPUOFF);                                              
+    case 12: adc_result = ADC10MEM0;
+	     __bic_SR_register_on_exit(CPUOFF);                                              
              break;                          // Clear CPUOFF bit from 0(SR)                         
     default: break; 
   }  
