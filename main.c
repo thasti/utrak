@@ -12,23 +12,19 @@
 #include "spi.h"
 #include "string.h"
 
+
+/* global ADC result for temperature / voltage readings */
 volatile uint16_t adc_result;
 
 /* 
  * hardware initialisation
  *
  * GPIO init
- *   P2.0 UART TXD
- *   P2.1 UART RXD
- *   P2.2 SPI CLK
- *   P1.6 SPI MOSI
- *   P1.7 SPI MISO
- *   P1.3 SPI CS
- *   P1.1 SI4060 shutdown
- *   P1.2 SI4060 data
- *
+ *   UCSI-pin direction is don't care (see UG), pull down for MISO
  * init eUSCI_A to UART (9600/8N1)
+ *   clocked by SMCLK
  * init eUSCI_B to SPI 
+ *   clocked by SMCLK
  *
  */
 
@@ -37,15 +33,18 @@ void hw_init(void) {
 	P3DIR |= BIT4 + BIT5 + BIT6 + BIT7;
 	P3OUT |= BIT4 + BIT5 + BIT6 + BIT7;
 	/* DCO init */
-	/* SMCLK 5.37MHz, divided by 8 */
+	/* SMCLK 5.37MHz divided by 8 */
 	CSCTL0_H = 0xA5;					/* write CS password */
 	CSCTL1 = 0;						/* set DCO to 5.37MHz */
 	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* DCO as ACLK, SMCLK, MCLK */
 	CSCTL3 = DIVA__8 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 	/* GPIO init */
-	P1DIR = CS;		/* GPIOs for output */
-  	P1SEL1 |= MOSI + MISO;			/* USCI_B MOSI, MISO */ 
+	P1OUT &= ~MISO;
+	P1OUT |= CS;
+	P1REN |= MISO;
+	P1DIR = CS + SI_SHDN + SI_DATA;				/* GPIOs for output */
+	P1SEL1 |= MOSI + MISO;					/* USCI_B MOSI, MISO */
 	P1SEL1 &= ~(SI_SHDN + SI_DATA + CS); 
   	P1SEL0 &= ~(SI_SHDN + SI_DATA + CS + MOSI + MISO);	/* USCI_B MOSI, MISO */
 	
@@ -54,8 +53,8 @@ void hw_init(void) {
 	P2SEL0 &= ~(RXD + TXD + SCLK);		/* USCI_A RXD, TXD, USCI_B CLK */
 
 	/* USCI_A init */
-	UCA0CTL1 |= UCSWRST; 			/* reset USCI */
-	UCA0CTL1 = UCSSEL_1;			/* SMCLK */ 
+	UCA0CTL1 = UCSWRST; 			/* reset USCI */
+	UCA0CTL1 |= UCSSEL_2;			/* SMCLK */
 	UCA0BR0 = 4;				
 	UCA0BR1 = 0;				
 	UCA0MCTLW = (0xFD<<8)+(5<<4)+UCOS16;	/* set UCA0BRS */
@@ -66,9 +65,9 @@ void hw_init(void) {
 	UCB0CTLW0 = UCSWRST;			/* Put state machine in reset */
 	UCB0CTLW0 |= UCMST+UCSYNC+UCCKPH+UCMSB;	/* 3-pin, 8-bit SPI master */
 						/* Clock polarity high, MSB */
-	UCB0CTLW0 |= UCSSEL_1;			/* SMCLK */
-	UCB0BR0 = 0xff;				/* divide by /2 */
-	UCB0BR1 = 2;
+	UCB0CTLW0 |= UCSSEL_1;			/* ACLK */
+	UCB0BR0 = 0;				/* divide by /1 */
+	UCB0BR1 = 0;
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
 
@@ -134,6 +133,13 @@ uint16_t getTemperature(void) {
 	return temperature;
 }
 
+void si4060_reset(void) {
+	P1OUT |= SI_SHDN;
+	__delay_cycles(4000);
+	P1OUT &= ~SI_SHDN;
+	__delay_cycles(4000);
+}
+
 int main(void) {
 	uint8_t i;
 	uint16_t temp;
@@ -142,21 +148,20 @@ int main(void) {
 	WDTCTL = WDTPW + WDTHOLD;
 	/* init all hardware components */
 	hw_init();
+	si4060_reset();
+	i = si4060_part_info();
+	P3OUT |= BIT7;
+	if (i == 0x40) {
+		P3OUT &= ~(BIT7);
+	} else {
+		P3OUT |= (BIT7);
+	}
 	si4060_power_up();
 	si4060_setup();
 	si4060_start_tx(0);
+	si4060_nop();
 	P3OUT &= ~(BIT6);
-	while(1) {
-		//for(i = 0; i < 65535; i++);
-		i = si4060_get_property_8(PROP_GLOBAL, GLOBAL_CONFIG);
-		P3OUT ^= (BIT5);
-		//if (P1IN & BIT0) {
-		if (i == 0xff) {
-			P3OUT |= (BIT7);
-		} else {
-			P3OUT &= ~(BIT7);
-		}
-	}
+	while(1);
 }
 
 /* USCI A0 ISR
