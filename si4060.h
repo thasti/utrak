@@ -5,7 +5,7 @@
  *
  */
 
-#define XO_FREQ			30000000UL
+#define XO_FREQ			32000000UL
 #define RF_FREQ_HZ		434075000.0f
 #define RF_DEV_HZ		500.0f
 #define F_INT			(2 * XO_FREQ / 8)
@@ -91,7 +91,7 @@ uint8_t si4060_part_info(void);
 #define PATCH 		(0x01 << 7) 	/* set patch mode */
 #define FUNC		0x01 		/* power on device */
 /* byte 2 */	
-#define TXCO		0x01		/* select if TXCO (1) or crystal (0) is used */
+#define TCXO		0x01		/* select if TCXO (1) or crystal (0) is used */
 
 /* GPIO_PIN_CFG arguments */
 /* bytes 1 .. 6 */
@@ -140,7 +140,7 @@ uint8_t si4060_part_info(void);
 
 /* ===== property values ===== */
 /* GLOBAL_CONFIG values */
-#define GLOBAL_RESERVED		(0x01 << 7) /* shall be set to 1 */
+#define GLOBAL_RESERVED		(0x01 << 6) /* shall be set to 1 */
 #define POWER_MODE_LOW_POWER	0x00	/* default */
 #define POWER_MODE_HIGH_PERF	0x01
 #define SEQUENCER_MODE_FAST	(0x00 << 5)	/* default */

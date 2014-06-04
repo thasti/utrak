@@ -11,8 +11,6 @@
 #include <stdio.h>
 #include "spi.h"
 #include "si4060.h"
-// TODO debug only
-#include <msp430.h>
 
 
 uint8_t si4060_read_cmd_buf(uint8_t deselect) {
@@ -31,7 +29,7 @@ void si4060_power_up(void) {
 	spi_select();
 	spi_write(CMD_POWER_UP);
 	spi_write(FUNC);
-	spi_write(0x00);
+	spi_write(TCXO);
 	spi_write((uint8_t) (XO_FREQ >> 24));
 	spi_write((uint8_t) (XO_FREQ >> 16));
 	spi_write((uint8_t) (XO_FREQ >> 8));
@@ -39,7 +37,6 @@ void si4060_power_up(void) {
 	spi_deselect();
 	/* wait for CTS */
 	while (si4060_read_cmd_buf(1) != 0xff);
-	P3OUT &= ~(BIT4);
 }
 
 void si4060_change_state(uint8_t state) {
@@ -70,7 +67,7 @@ void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
 }
 
 uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
-	uint8_t temp;
+	uint8_t temp = 0;
 	spi_select();
 	spi_write(CMD_GET_PROPERTY);
 	spi_write(group);
@@ -185,8 +182,8 @@ void si4060_setup(void) {
 			GLOBAL_RESERVED | POWER_MODE_HIGH_PERF | SEQUENCER_MODE_FAST);
 	/* set up GPIOs */
 	si4060_gpio_pin_cfg(GPIO_MODE_INPUT,
-			GPIO_MODE_DRIVE1,
-			GPIO_MODE_DRIVE1,
+			GPIO_MODE_DRIVE0,
+			GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
 			DRV_STRENGTH_HIGH);
 			
