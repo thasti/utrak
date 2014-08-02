@@ -12,25 +12,38 @@
 #include "spi.h"
 #include "string.h"
 
+/* a standard-conforming NMEA sentence is no longer than 83 characters
+ * non-standard ones are filtered out */
+volatile uint16_t buf_index = 0;
+volatile char nmea_buf[83] = { 0 };
+
+/* nmea_state - state machine for handling GPS messages
+ *  - gather chars until check for GPGGA is possible
+ *  - GPGGA detected, continue gathering chars
+ *  - not a GPGGA-sentence - stop filling the buffer until "$" is recvd
+ *  - GPGGA-sentence is finished, offload data-extraction
+ */
+enum NMEA_states { NMEA_IDLE, NMEA_GPGGA_DET, NMEA_INVALID, NMEA_FINISHED };
+volatile uint16_t nmea_state = NMEA_IDLE;
 
 /* global ADC result for temperature / voltage readings */
 volatile uint16_t adc_result;
 
-/* 
+/*
  * hardware initialisation
  *
  * GPIO init
  *   UCSI-pin direction is don't care (see UG), pull down for MISO
  * init eUSCI_A to UART (9600/8N1)
  *   clocked by SMCLK
- * init eUSCI_B to SPI 
+ * init eUSCI_B to SPI
  *   clocked by SMCLK
  *
  */
 
 void hw_init(void) {
 	/* DEBUG */
-	P3DIR |= BIT4 + BIT5 + BIT6 + BIT7;
+	P3DIR = BIT4 + BIT5 + BIT6 + BIT7;
 	P3OUT |= BIT4 + BIT5 + BIT6 + BIT7;
 	/* DCO init */
 	/* SMCLK 5.37MHz divided by 8 */
@@ -45,9 +58,9 @@ void hw_init(void) {
 	P1REN |= MISO;
 	P1DIR = CS + SI_SHDN + SI_DATA;				/* GPIOs for output */
 	P1SEL1 |= MOSI + MISO;					/* USCI_B MOSI, MISO */
-	P1SEL1 &= ~(SI_SHDN + SI_DATA + CS); 
-  	P1SEL0 &= ~(SI_SHDN + SI_DATA + CS + MOSI + MISO);	/* USCI_B MOSI, MISO */
-	
+	P1SEL1 &= ~(SI_SHDN + SI_DATA + CS);
+	P1SEL0 &= ~(SI_SHDN + SI_DATA + CS + MOSI + MISO);	/* USCI_B MOSI, MISO */
+
 	P2DIR = TXD;				/* GPIOs for output */
 	P2SEL1 |= RXD + TXD + SCLK;		/* USCI_A RXD, TXD, USCI_B CLK */
 	P2SEL0 &= ~(RXD + TXD + SCLK);		/* USCI_A RXD, TXD, USCI_B CLK */
@@ -55,8 +68,8 @@ void hw_init(void) {
 	/* USCI_A init */
 	UCA0CTL1 = UCSWRST; 			/* reset USCI */
 	UCA0CTL1 |= UCSSEL_2;			/* SMCLK */
-	UCA0BR0 = 4;				
-	UCA0BR1 = 0;				
+	UCA0BR0 = 4;
+	UCA0BR1 = 0;
 	UCA0MCTLW = (0xFD<<8)+(5<<4)+UCOS16;	/* set UCA0BRS */
 	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
 	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
@@ -66,7 +79,7 @@ void hw_init(void) {
 	UCB0CTLW0 |= UCMST+UCSYNC+UCCKPH+UCMSB;	/* 3-pin, 8-bit SPI master */
 						/* Clock polarity high, MSB */
 	UCB0CTLW0 |= UCSSEL_1;			/* ACLK */
-	UCB0BR0 = 0;				/* divide by /1 */
+	UCB0BR0 = 8;				/* divide by /1 */
 	UCB0BR1 = 0;
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
@@ -88,11 +101,9 @@ uint16_t getBatteryVoltage(void) {
 	voltage = 0;
 	for (i = 0; i < 10; i++) {
 		ADC10CTL0 |= ADC10ENC + ADC10SC;	/* Sampling and conversion start */
-    		__bis_SR_register(CPUOFF + GIE);	/* LPM0, ADC10_ISR will force exit */
-	
+		__bis_SR_register(CPUOFF + GIE);	/* LPM0, ADC10_ISR will force exit */
 		/* take ADC reading */
 		voltage += adc_result * 32 / 10;		/* convert to mV */
-		
 	}
 	voltage /= 10;
 	/* disable ADC */
@@ -112,11 +123,11 @@ uint16_t getTemperature(void) {
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
 	ADC10MCTL0 = ADC10SREF_1 + ADC10INCH_10;/* ADC input ch A10 => temp sense */
 	ADC10IE |= ADC10IE0;			/* enable the Interrupt */
-  
+
 	/* Configure internal reference */
 	while(REFCTL0 & REFGENBUSY);		/* If ref generator busy, WAIT */
 	REFCTL0 |= REFVSEL_0+REFON;		/* Select internal ref = 1.5V */
-  
+
 	__delay_cycles(400);			/* Delay for Ref to settle */
 
 	/* take ADC reading */
@@ -135,9 +146,11 @@ uint16_t getTemperature(void) {
 
 void si4060_reset(void) {
 	P1OUT |= SI_SHDN;
-	__delay_cycles(4000);
+	/* wait 10us */
+	__delay_cycles(2000);
 	P1OUT &= ~SI_SHDN;
-	__delay_cycles(4000);
+	/* wait 20ms */
+	__delay_cycles(20000);
 }
 
 int main(void) {
@@ -149,24 +162,22 @@ int main(void) {
 	/* init all hardware components */
 	hw_init();
 	si4060_reset();
+
 	i = si4060_part_info();
-	P3OUT |= BIT7;
-	if (i == 0x40) {
-		P3OUT &= ~(BIT7);
-	} else {
-		P3OUT |= (BIT7);
+	if (i != 0x40) {
+		while(1);
 	}
+
 	si4060_power_up();
 	si4060_setup();
 	si4060_start_tx(0);
 	si4060_nop();
-	P3OUT &= ~(BIT6);
 	while(1);
 }
 
 /* USCI A0 ISR
  *
- * USCI A is UART. RX appends incoming bytes to the NMEA buffer 
+ * USCI A is UART. RX appends incoming bytes to the NMEA buffer
  *
  */
 #pragma vector=USCI_A0_VECTOR
@@ -180,34 +191,34 @@ __interrupt void USCI_A0_ISR(void)
 			UCA0TXBUF = UCA0RXBUF;                  /* TX -> RXed character */
 			break;
 		case 4:						/* Vector 4 - TXIFG */
-			break;                             
-		default: 
-			break;  
+			break;
+		default:
+			break;
 	}
 }
 
 
 /* ADC10 ISR
  *
- * just resumes CPU operation, as ADC conversions are done in CPUOFF-state 
+ * just resumes CPU operation, as ADC conversions are done in CPUOFF-state
  *
  */
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
 {
-  P3OUT ^= 0xff;
-  switch(ADC10IV)
-  {
-    case  0: break;                          // No interrupt
-    case  2: break;                          // conversion result overflow
-    case  4: break;                          // conversion time overflow
-    case  6: break;                          // ADC10HI
-    case  8: break;                          // ADC10LO
-    case 10: break;                          // ADC10IN
-    case 12: adc_result = ADC10MEM0;
-	     __bic_SR_register_on_exit(CPUOFF);                                              
-             break;                          // Clear CPUOFF bit from 0(SR)                         
-    default: break; 
-  }  
+	P3OUT ^= 0xff;
+	switch(ADC10IV)
+	{
+		case  0: break;                          // No interrupt
+		case  2: break;                          // conversion result overflow
+		case  4: break;                          // conversion time overflow
+		case  6: break;                          // ADC10HI
+		case  8: break;                          // ADC10LO
+		case 10: break;                          // ADC10IN
+		case 12:adc_result = ADC10MEM0;		 // ADC10MEM0
+			__bic_SR_register_on_exit(CPUOFF);
+			break;
+		default: break;
+	}
 }
 

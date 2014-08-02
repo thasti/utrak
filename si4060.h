@@ -5,9 +5,9 @@
  *
  */
 
-#define XO_FREQ			32000000UL
+#define XO_FREQ			30000000UL
 #define RF_FREQ_HZ		434075000.0f
-#define RF_DEV_HZ		500.0f
+#define RF_DEV_HZ		50.0f
 #define F_INT			(2 * XO_FREQ / 8)
 #define FDIV_INTE		((RF_FREQ_HZ / F_INT) - 1)
 #define FDIV_FRAC		((RF_FREQ_HZ - F_INT * (int)FDIV_INTE)*((uint32_t)1 << 19)) / F_INT
@@ -90,7 +90,7 @@ uint8_t si4060_part_info(void);
 /* byte 1 */
 #define PATCH 		(0x01 << 7) 	/* set patch mode */
 #define FUNC		0x01 		/* power on device */
-/* byte 2 */	
+/* byte 2 */
 #define TCXO		0x01		/* select if TCXO (1) or crystal (0) is used */
 
 /* GPIO_PIN_CFG arguments */
@@ -102,7 +102,7 @@ uint8_t si4060_part_info(void);
 #define GPIO_MODE_DRIVE0	0x02	/* CMOS output "low" */
 #define GPIO_MODE_DRIVE1	0x03	/* CMOS output "high" */
 #define GPIO_MODE_INPUT		0x04	/* GPIO is input, for TXDATA etc, function is not configured here */
-#define GPIO_MODE_32K_CLK	0x05	/* outputs the 32kHz CLK when selected in CLK32_CLK_SEL */		
+#define GPIO_MODE_32K_CLK	0x05	/* outputs the 32kHz CLK when selected in CLK32_CLK_SEL */
 #define GPIO_MODE_BOOT_CLK	0x06	/* outputs boot clock when SPI_ACTIVE */
 #define GPIO_MODE_DIV_CLK	0x07	/* outputs divided xtal clk */
 #define GPIO_MODE_CTS		0x08	/* output, '1' when device is ready to accept new command */

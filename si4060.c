@@ -25,11 +25,12 @@ uint8_t si4060_read_cmd_buf(uint8_t deselect) {
 }
 
 void si4060_power_up(void) {
+	/* wait for CTS */
 	while (si4060_read_cmd_buf(1) != 0xff);
 	spi_select();
 	spi_write(CMD_POWER_UP);
 	spi_write(FUNC);
-	spi_write(TCXO);
+	spi_write(0x00);			/* TCXO if used */
 	spi_write((uint8_t) (XO_FREQ >> 24));
 	spi_write((uint8_t) (XO_FREQ >> 16));
 	spi_write((uint8_t) (XO_FREQ >> 8));
@@ -152,8 +153,9 @@ uint8_t si4060_part_info(void) {
 			spi_deselect();
 		}
 	}
-	spi_read();	 /* ignore CHIPREV */
-	temp = spi_read(); /* read PART[0] */
+	spi_read();	 	/* ignore CHIPREV */
+	temp = spi_read(); 	/* read PART[0] */
+	spi_read(); 		/* read PART[1] */
 	spi_deselect();
 	return temp;
 }
@@ -175,18 +177,17 @@ void si4060_stop_tx(void) {
 }
 
 void si4060_setup(void) {
-	
+
 	/* set high performance mode */
-	si4060_set_property_8(PROP_GLOBAL, 
-			GLOBAL_CONFIG, 	
+	si4060_set_property_8(PROP_GLOBAL,
+			GLOBAL_CONFIG,
 			GLOBAL_RESERVED | POWER_MODE_HIGH_PERF | SEQUENCER_MODE_FAST);
 	/* set up GPIOs */
-	si4060_gpio_pin_cfg(GPIO_MODE_INPUT,
+	si4060_gpio_pin_cfg(PULL_CTL + GPIO_MODE_INPUT,
 			GPIO_MODE_DRIVE0,
 			GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
 			DRV_STRENGTH_HIGH);
-			
 	/* disable preamble */
 	si4060_set_property_8(PROP_PREAMBLE,
 			PREAMBLE_TX_LENGTH,
@@ -214,7 +215,7 @@ void si4060_setup(void) {
 	/* set up the PA duty cycle */
 	si4060_set_property_8(PROP_PA,
 			PA_BIAS_CLKDUTY,
-			PA_BIAS_CLKDUTY_SIN_25);			
+			PA_BIAS_CLKDUTY_SIN_25);
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
