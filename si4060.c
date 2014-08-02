@@ -269,7 +269,7 @@ void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gp
  * returns:	the PART_ID - should be 0x4060
  */
 uint16_t si4060_part_info(void) {
-	uint8_t temp;
+	uint16_t temp;
 
 	temp = 0;
 	spi_select();
