@@ -14,13 +14,16 @@
 #define FDEV			((((uint32_t)1 << 19) * 8 * RF_DEV_HZ)/(2*XO_FREQ))
 
 /* function prototypes */
+void si4060_shutdown(void);
+void si4060_wakeup(void);
+void si4060_reset(void);
 void si4060_power_up(void);
 void si4060_nop(void);
 void si4060_start_tx(uint8_t channel);
 void si4060_stop_tx(void);
 void si4060_setup(void);
 uint8_t si4060_get_property_8(uint8_t group, uint8_t prop);
-uint8_t si4060_part_info(void);
+uint16_t si4060_part_info(void);
 
 /* ===== command definitions ===== */
 #define CMD_NOP			0x00

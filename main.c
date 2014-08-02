@@ -144,27 +144,20 @@ uint16_t getTemperature(void) {
 	return temperature;
 }
 
-void si4060_reset(void) {
-	P1OUT |= SI_SHDN;
-	/* wait 10us */
-	__delay_cycles(2000);
-	P1OUT &= ~SI_SHDN;
-	/* wait 20ms */
-	__delay_cycles(20000);
-}
 
 int main(void) {
-	uint8_t i;
-	uint16_t temp;
+	uint16_t temp, i;
 	char string[4];
 	/* disable watchdog timer */
 	WDTCTL = WDTPW + WDTHOLD;
 	/* init all hardware components */
 	hw_init();
+	/* reset the radio chip from shutdown */
 	si4060_reset();
 
 	i = si4060_part_info();
-	if (i != 0x40) {
+	if (i != 0x4060) {
+		/* indicate error condition */
 		while(1);
 	}
 

@@ -8,11 +8,57 @@
  */
 
 #include <inttypes.h>
-#include <stdio.h>
+#include <msp430.h>	/* for __delay_cycles() */
 #include "spi.h"
 #include "si4060.h"
+#include "main.h"	/* for GPIO constants */
 
+/*
+ * si4060_shutdown
+ *
+ * makes the Si4060 go to shutdown state.
+ * all register content is lost.
+ */
+void si4060_shutdown(void) {
+	P1OUT |= SI_SHDN;
+	/* wait 10us */
+	__delay_cycles(2000);
+}
 
+/*
+ * si4060_wakeup
+ *
+ * wakes up the Si4060 from shutdown state.
+ * si4060_power_up and si4060_setup have to be called afterwards
+ */
+void si4060_wakeup(void) {
+	P1OUT &= ~SI_SHDN;
+	/* wait 20ms */
+	__delay_cycles(20000);
+}
+
+/*
+ * si4060_reset
+ *
+ * cleanly does the POR as specified in datasheet
+ */
+void si4060_reset(void) {
+	si4060_shutdown();
+	si4060_wakeup();
+}
+
+/*
+ * si4060_read_cmd_buf
+ *
+ * reads the Si4060 command buffer from via SPI
+ *
+ * deselect: 	whether to deselect the slave after reading the response or not.
+ * 		any command reading subsequent bytes after the CTS should use this
+ * 		function to get CTS and continue doing spi_read afterwards
+ * 		and finally deselecting the slave.
+ *
+ * returns:	the value of the first command buffer byte (i.e. CTS or not)
+ */
 uint8_t si4060_read_cmd_buf(uint8_t deselect) {
 	uint8_t ret;
 	spi_select();
@@ -24,6 +70,14 @@ uint8_t si4060_read_cmd_buf(uint8_t deselect) {
 	return ret;
 }
 
+/*
+ * si4060_power_up
+ *
+ * powers up the Si4060 by issuing the POWER_UP command
+ *
+ * warning: 	the si4060 can lock after issuing this command if input clock
+ * 		is not available for the internal RC oscillator calibration.
+ */
 void si4060_power_up(void) {
 	/* wait for CTS */
 	while (si4060_read_cmd_buf(1) != 0xff);
@@ -40,6 +94,11 @@ void si4060_power_up(void) {
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
+/*
+ * si4060_change_state
+ *
+ * changes the internal state machine state of the Si4060
+ */
 void si4060_change_state(uint8_t state) {
 	spi_select();
 	spi_write(CMD_CHANGE_STATE);
@@ -49,6 +108,11 @@ void si4060_change_state(uint8_t state) {
 
 }
 
+/*
+ * si4060_nop
+ *
+ * implements the NOP command on the Si4060
+ */
 void si4060_nop(void) {
 	spi_select();
 	spi_write(CMD_NOP);
@@ -56,6 +120,15 @@ void si4060_nop(void) {
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
+/*
+ * si4060_set_property_8
+ *
+ * sets an 8 bit (1 byte) property in the Si4060
+ *
+ * group:	the group number of the property
+ * prop:	the number (index) of the property
+ * val:		the value to set
+ */
 void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
@@ -67,6 +140,16 @@ void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
+/*
+ * si4060_get_property_8
+ *
+ * gets an 8 bit (1 byte) property in the Si4060
+ *
+ * group:	the group number of the property
+ * prop:	the number (index) of the property
+ *
+ * returns:	the value of the property
+ */
 uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
 	uint8_t temp = 0;
 	spi_select();
@@ -86,6 +169,15 @@ uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
 	return temp;
 }
 
+/*
+ * si4060_set_property_16
+ *
+ * sets an 16 bit (2 byte) property in the Si4060
+ *
+ * group:	the group number of the property
+ * prop:	the number (index) of the property
+ * val:		the value to set
+ */
 void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
@@ -98,6 +190,15 @@ void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
+/*
+ * si4060_set_property_24
+ *
+ * sets an 24 bit (3 byte) property in the Si4060
+ *
+ * group:	the group number of the property
+ * prop:	the number (index) of the property
+ * val:		the value to set
+ */
 void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
@@ -111,6 +212,15 @@ void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
+/*
+ * si4060_set_property_32
+ *
+ * sets an 32 bit (4 byte) property in the Si4060
+ *
+ * group:	the group number of the property
+ * prop:	the number (index) of the property
+ * val:		the value to set
+ */
 void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
@@ -125,6 +235,15 @@ void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
+/*
+ * si4060_gpio_pin_cfg
+ *
+ * configures the GPIOs on the Si4060
+ * see the GPIO_*-defines for reference
+ *
+ * gpio(0..3):	setting flags for respective GPIOs
+ * drvstrength:	the driver strength
+ */
 void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gpio3, uint8_t drvstrength) {
 	spi_select();
 	spi_write(CMD_GPIO_PIN_CFG);
@@ -139,7 +258,17 @@ void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gp
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
-uint8_t si4060_part_info(void) {
+/*
+ * si4060_part_info
+ *
+ * gets the PART_ID from the Si4060
+ * this can be used to check for successful communication.
+ * as the SPI bus returns 0xFF (MISO=high) when no slave is connected,
+ * reading CTS can not verify communication to the Si4060.
+ *
+ * returns:	the PART_ID - should be 0x4060
+ */
+uint16_t si4060_part_info(void) {
 	uint8_t temp;
 
 	temp = 0;
@@ -155,11 +284,19 @@ uint8_t si4060_part_info(void) {
 	}
 	spi_read();	 	/* ignore CHIPREV */
 	temp = spi_read(); 	/* read PART[0] */
-	spi_read(); 		/* read PART[1] */
+	temp = temp << 8;
+	temp |= spi_read(); 	/* read PART[1] */
 	spi_deselect();
 	return temp;
 }
 
+/*
+ * si4060_start_tx
+ *
+ * starts transmission by the Si4060.
+ *
+ * channel:	the channel to start transmission on
+ */
 void si4060_start_tx(uint8_t channel) {
 	spi_select();
 	spi_write(CMD_START_TX);
@@ -172,10 +309,21 @@ void si4060_start_tx(uint8_t channel) {
 	while (si4060_read_cmd_buf(1) != 0xff);
 }
 
+/*
+ * si4060_stop_tx
+ *
+ * makes the Si4060 stop all transmissions by transistioning to SLEEP state
+ */
 void si4060_stop_tx(void) {
 	si4060_change_state(STATE_SLEEP);
 }
 
+/*
+ * si4060_setup
+ *
+ * initializes the Si4060 by setting all neccesary internal registers.
+ * has to be called after si4060_power_up.
+ */
 void si4060_setup(void) {
 
 	/* set high performance mode */
