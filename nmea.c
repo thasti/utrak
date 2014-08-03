@@ -1,7 +1,7 @@
-/* 
+/*
  * NMEA-0183 related functionality
  *
- * Stefan Biereigel 
+ * Stefan Biereigel
  *
  */
 
@@ -10,7 +10,7 @@
 #include "nmea.h"
 #include "string.h"
 
-uint8_t NMEAsentenceIsGPGGA(char *sentence) {
+uint8_t NMEA_sentence_is_GPGGA(char *sentence) {
 	uint8_t i;
 	const char pattern[] = "$GPGGA";
 
@@ -22,10 +22,9 @@ uint8_t NMEAsentenceIsGPGGA(char *sentence) {
 	}
 
 	return 1;
-	
 }
 
-uint8_t GPGGAGetData(char *sentence, char *lat, char *lon, char *alt) {
+uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt) {
 	uint8_t i, tmp;
 	uint8_t field = 0;
 	uint8_t len = 0;

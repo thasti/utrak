@@ -30,7 +30,9 @@ volatile uint16_t nmea_state = NMEA_IDLE;
 volatile uint16_t adc_result;
 
 /*
- * hardware initialisation
+ * hw_init
+ *
+ * hardware initialisation routine
  *
  * GPIO init
  *   UCSI-pin direction is don't care (see UG), pull down for MISO
@@ -40,19 +42,19 @@ volatile uint16_t adc_result;
  *   clocked by SMCLK
  *
  */
-
 void hw_init(void) {
 	/* DEBUG */
 	P3DIR = BIT4 + BIT5 + BIT6 + BIT7;
 	P3OUT |= BIT4 + BIT5 + BIT6 + BIT7;
-	/* DCO init */
-	/* SMCLK 5.37MHz divided by 8 */
+
+	/* DCO init, SMCLK is 5.37MHz divided by 8 */
 	CSCTL0_H = 0xA5;					/* write CS password */
 	CSCTL1 = 0;						/* set DCO to 5.37MHz */
 	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* DCO as ACLK, SMCLK, MCLK */
 	CSCTL3 = DIVA__8 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
-	/* GPIO init */
+
+	/* GPIO init Port 1 */
 	P1OUT &= ~MISO;
 	P1OUT |= CS;
 	P1REN |= MISO;
@@ -61,11 +63,12 @@ void hw_init(void) {
 	P1SEL1 &= ~(SI_SHDN + SI_DATA + CS);
 	P1SEL0 &= ~(SI_SHDN + SI_DATA + CS + MOSI + MISO);	/* USCI_B MOSI, MISO */
 
+	/* GPIO init Port 2 */
 	P2DIR = TXD;				/* GPIOs for output */
 	P2SEL1 |= RXD + TXD + SCLK;		/* USCI_A RXD, TXD, USCI_B CLK */
 	P2SEL0 &= ~(RXD + TXD + SCLK);		/* USCI_A RXD, TXD, USCI_B CLK */
 
-	/* USCI_A init */
+	/* USCI_A (GPS UART) init */
 	UCA0CTL1 = UCSWRST; 			/* reset USCI */
 	UCA0CTL1 |= UCSSEL_2;			/* SMCLK */
 	UCA0BR0 = 4;
@@ -74,12 +77,12 @@ void hw_init(void) {
 	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
 	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
 
-	/* USCI_B init */
+	/* USCI_B (Si4060 SPI) init */
 	UCB0CTLW0 = UCSWRST;			/* Put state machine in reset */
 	UCB0CTLW0 |= UCMST+UCSYNC+UCCKPH+UCMSB;	/* 3-pin, 8-bit SPI master */
 						/* Clock polarity high, MSB */
 	UCB0CTLW0 |= UCSSEL_1;			/* ACLK */
-	UCB0BR0 = 8;				/* divide by /1 */
+	UCB0BR0 = 0;				/* divide by /1 */
 	UCB0BR1 = 0;
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
@@ -88,7 +91,14 @@ void hw_init(void) {
 	__bis_SR_register(GIE);			/* set interrupt enable bit */
 }
 
-uint16_t getBatteryVoltage(void) {
+/*
+ * get_battery_voltage
+ *
+ * reads ADC channel 1, where the lithium cell is connected
+ *
+ * returns:	the voltage in millivolts (3000 = 3000mV = 3,0V)
+ */
+uint16_t get_battery_voltage(void) {
 	uint16_t i;
 	uint16_t voltage;
 	/* enable ADC */
@@ -113,7 +123,13 @@ uint16_t getBatteryVoltage(void) {
 	return voltage;
 }
 
-uint16_t getTemperature(void) {
+/* get_die_temperature
+ *
+ * reads the ADC channel 10, where the internal temperature sensor is connected
+ *
+ * returns:	the temperature in degrees celsius
+ */
+uint16_t get_die_temperature(void) {
 	long temperature;
 
 	/* enable ADC */
@@ -144,6 +160,39 @@ uint16_t getTemperature(void) {
 	return temperature;
 }
 
+/*
+ * gps_set_gga_only
+ *
+ * tells the GPS to only output GPGGA-messages
+ */
+void gps_set_gga_only(void) {
+	char ggaonly[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n";
+	int i;
+
+	for (i = 0; i < sizeof(ggaonly); i++) {
+		while (!(UCA0IFG&UCTXIFG));
+		UCA0TXBUF = ggaonly[i];
+	}
+}
+
+/*
+ * gps_set_alwayslocate
+ *
+ * tells the GPS to enter AlwaysLocate(TM) mode.
+ * recommended only after a fix is available and uses >5 satellites,
+ * otherwise fix seems not as stable
+ *
+ * AlwaysLocate(TM) mode can be exit by sending any byte to the GPS
+ */
+void gps_set_alwayslocate(void) {
+	char alwayslocate[] = "$PMTK225,8*23\r\n";
+	int i;
+
+	for (i = 0; i < sizeof(alwayslocate); i++) {
+		while (!(UCA0IFG&UCTXIFG));
+		UCA0TXBUF = alwayslocate[i];
+	}
+}
 
 int main(void) {
 	uint16_t temp, i;
@@ -165,13 +214,25 @@ int main(void) {
 	si4060_setup();
 	si4060_start_tx(0);
 	si4060_nop();
+
+	/* wait for the GPS to startup */
+	__delay_cycles(60000);
+	__delay_cycles(60000);
+	__delay_cycles(60000);
+	__delay_cycles(60000);
+	__delay_cycles(60000);
+	__delay_cycles(60000);
+	__delay_cycles(60000);
+	__delay_cycles(60000);
+	gps_set_gga_only();
 	while(1);
+	gps_set_alwayslocate();
 }
 
-/* USCI A0 ISR
+/*
+ * USCI A0 ISR
  *
  * USCI A is UART. RX appends incoming bytes to the NMEA buffer
- *
  */
 #pragma vector=USCI_A0_VECTOR
 __interrupt void USCI_A0_ISR(void)
@@ -180,8 +241,7 @@ __interrupt void USCI_A0_ISR(void)
 		case 0:						/* Vector 0 - no interrupt */
 			break;
 		case 2:						/* Vector 2 - RXIFG */
-			while (!(UCA0IFG&UCTXIFG));             /* USCI_A0 TX buffer ready */
-			UCA0TXBUF = UCA0RXBUF;                  /* TX -> RXed character */
+			P3OUT ^= BIT7;
 			break;
 		case 4:						/* Vector 4 - TXIFG */
 			break;
@@ -191,10 +251,10 @@ __interrupt void USCI_A0_ISR(void)
 }
 
 
-/* ADC10 ISR
+/*
+ * ADC10 ISR
  *
  * just resumes CPU operation, as ADC conversions are done in CPUOFF-state
- *
  */
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)

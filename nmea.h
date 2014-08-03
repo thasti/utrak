@@ -3,8 +3,8 @@
 
 #include <inttypes.h>
 
-uint8_t NMEAsentenceIsGPGGA(char *sentence);
-uint8_t GPGGAGetData(char *sentence, char *lat, char *lon, char *alt);
+uint8_t NMEA_sentenc_is_GPGGA(char *sentence);
+uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt);
 
 #define LAT_FIELD	2
 #define NS_FIELD	3

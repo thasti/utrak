@@ -24,17 +24,17 @@ int main(void) {
 	printf("** String to integer/decimal tests\n");
 	printf("Test String: %s\n", test);
 	printf("Length: %d\n", len);
-	
+
 	atoid32(test, len, &integer, &decimal);
 	printf("Integer Portion: %zu\n", integer);
 	printf("Decimal Portion: %zu\n", decimal);
-	
+
 	atod32(test, len, &decimal);
 	printf("Decimal Portion: %zu\n", decimal);
-	
+
 	atoi32(test, len, &integer);
 	printf("Integer Portion: %zu\n", integer);
-	
+
 	printf("\n** Integer to String tests\n");
 	integer = 300;
 
