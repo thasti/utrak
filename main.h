@@ -15,6 +15,9 @@
 #define TX_BUF_START_OFFSET 	sizeof("$$" PAYLOAD_NAME ",") - 1
 #define TX_BUF_CHECKSUM_OFFSET	sizeof("$$") - 1
 
+/* number of idle bits to transmit */
+#define NUM_IDLE_BITS	32
+
 /* buffer sizes */
 #define NMEA_BUF_SIZE	83
 #define TX_BUF_SIZE	83

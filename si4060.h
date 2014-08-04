@@ -11,7 +11,7 @@
 
 #define XO_FREQ			30000000UL
 #define RF_FREQ_HZ		434075000.0f
-#define RF_DEV_HZ		50.0f
+#define RF_DEV_HZ		100.0f
 #define F_INT			(2 * XO_FREQ / 8)
 #define FDIV_INTE		((RF_FREQ_HZ / F_INT) - 1)
 #define FDIV_FRAC		((RF_FREQ_HZ - F_INT * (int)FDIV_INTE)*((uint32_t)1 << 19)) / F_INT
