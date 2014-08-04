@@ -5,11 +5,12 @@
 
 uint8_t NMEA_sentence_is_GPGGA(char *sentence);
 uint8_t GPGGA_has_fix(char *sentence);
-uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sat);
+uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sat, char *time);
 
 /*
  * GPGGA field numbers
  */
+#define TIME_FIELD	1
 #define LAT_FIELD	2
 #define NS_FIELD	3
 #define LON_FIELD	4
@@ -23,5 +24,6 @@ uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sa
  */
 #define LAT_LENGTH	7
 #define LON_LENGTH	8
+#define TIME_LENGTH	6
 
 #endif

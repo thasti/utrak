@@ -69,7 +69,7 @@ uint8_t GPGGA_has_fix(char *sentence) {
 	return 0;
 }
 
-uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sat) {
+uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sat, char *time) {
 	uint8_t i, tmp;
 	uint8_t field = 0;
 	uint8_t len = 0;
@@ -85,6 +85,11 @@ uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sa
 		/* process preceeding field if field separator is reached */
 		if (*(sentence + i) == ',') {
 			switch (field) {
+				case TIME_FIELD:
+					for (tmp = 0; tmp < TIME_LENGTH; tmp++) {
+						*(time++) = *(sentence + i - len + 1 + tmp);
+					}
+					break;
 				case LAT_FIELD:
 					*(lat++) = '+';
 					for (tmp = 0; tmp < LAT_LENGTH; tmp++) {
@@ -113,7 +118,10 @@ uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sa
 					break;
 				case SAT_FIELD:
 					*(sat++) = *(sentence + i - len + 1);
-					*(sat++) = *(sentence + i - len + 2);
+					/* as opposed to the datasheet, sat number may have 1 or 2 chars */
+					if (*(sentence + i - len + 2) != ',')
+						*(sat) = *(sentence + i - len + 2);
+					break;
 				case ALT_FIELD:
 					atoi32(sentence + i - len + 1, len - 1, &alt_i);
 					/* alt is < 16bit, so we can safely multiply * 100 */

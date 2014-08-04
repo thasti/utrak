@@ -268,10 +268,10 @@ void tx_blips(void) {
 		case 1:
 			P1OUT |= SI_DATA;
 			break;
-		case 2:
+		case 5:
 			P1OUT &= ~SI_DATA;
 			break;
-		case 6:
+		case 30:
 			count = 0;
 			break;
 		default:
