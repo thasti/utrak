@@ -55,6 +55,8 @@ int main(void) {
 	printf("\n** CRC tests\n");
 	uint16_t crc = 0xffff;
 	char testcheck[] = "hadie,181,10:42:10,54.422829,-6.741293,27799.3,1:10";
+	//char testcheck[] = "123456789";
+	// see MSP430 datasheet about CRC
 	for (i = 0; i < sizeof(testcheck)-1; i++) {
 		crc = crc_xmodem_update(crc, testcheck[i]);
 	}
