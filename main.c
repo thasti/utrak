@@ -12,22 +12,41 @@
 #include "spi.h"
 #include "string.h"
 
-/* a standard-conforming NMEA sentence is no longer than 83 characters
- * non-standard ones are filtered out */
-volatile uint16_t buf_index = 0;
-volatile char nmea_buf[83] = { 0 };
-
-/* nmea_state - state machine for handling GPS messages
- *  - gather chars until check for GPGGA is possible
- *  - GPGGA detected, continue gathering chars
- *  - not a GPGGA-sentence - stop filling the buffer until "$" is recvd
- *  - GPGGA-sentence is finished, offload data-extraction
+/*
+ * GLOBAL VARIABLES
  */
-enum NMEA_states { NMEA_IDLE, NMEA_GPGGA_DET, NMEA_INVALID, NMEA_FINISHED };
-volatile uint16_t nmea_state = NMEA_IDLE;
 
-/* global ADC result for temperature / voltage readings */
-volatile uint16_t adc_result;
+/*
+ * housekeeping variables
+ */
+volatile uint16_t seconds = 0;		/* timekeeping via timer */
+volatile uint16_t tick = 0;		/* flag for timer handling (ISR -> main) */
+volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
+
+/*
+ * the NMEA data buffer
+ * it was confirmed that the Linx RXM-GPS-RM sticks to the standard
+ */
+volatile uint16_t nmea_buf_index = 0;	/* the index for writing to the buffer */
+volatile uint16_t nmea_buf_rdy = 0;	/* the ready-flag (ISR -> main) */
+volatile char nmea_buf[83] = { 0 };	/* the actual buffer */
+
+/*
+ * the TX data buffer
+ * contains ASCII data, which is either transmitted as CW oder RTTY
+ */
+uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
+uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
+char tx_buf[83] = "$$" PAYLOAD_NAME ",";	/* the actual buffer */
+
+/*
+ * GPS fix data
+ * extracted from NMEA sentences by GPS data processing
+ */
+char tlm_lat[] = { 0 };
+char tlm_lon[] = { 0 };
+char tlm_alt[] = { 0 };
+char tlm_sat[] = { 0 };
 
 /*
  * hw_init
@@ -39,6 +58,8 @@ volatile uint16_t adc_result;
  * init eUSCI_A to UART (9600/8N1)
  *   clocked by SMCLK
  * init eUSCI_B to SPI
+ *   clocked by SMCLK
+ * init TACCR0 for systick
  *   clocked by SMCLK
  *
  */
@@ -86,6 +107,11 @@ void hw_init(void) {
 	UCB0BR1 = 0;
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
+
+	/* 5.370.000 (DCO) / 8 (DIV) * 0.01 (sec) = 6712.5 */
+	TA0CCTL0 = CCIE;			/* TACCR0 interrupt enabled */
+	TA0CCR0 = 6712;
+	TA0CTL = TASSEL_2 + MC_1;		/* SMCLK, UP mode */
 
 	/* Enable Interrupts */
 	__bis_SR_register(GIE);			/* set interrupt enable bit */
@@ -194,27 +220,13 @@ void gps_set_alwayslocate(void) {
 	}
 }
 
-int main(void) {
-	uint16_t temp, i;
-	char string[4];
-	/* disable watchdog timer */
-	WDTCTL = WDTPW + WDTHOLD;
-	/* init all hardware components */
-	hw_init();
-	/* reset the radio chip from shutdown */
-	si4060_reset();
-
-	i = si4060_part_info();
-	if (i != 0x4060) {
-		/* indicate error condition */
-		while(1);
-	}
-
-	si4060_power_up();
-	si4060_setup();
-	si4060_start_tx(0);
-	si4060_nop();
-
+/*
+ * gps_startup_delay
+ *
+ * waits for the GPS to start up. this value is empirical.
+ * we could also wait for the startup string
+ */
+void gps_startup_delay(void) {
 	/* wait for the GPS to startup */
 	__delay_cycles(60000);
 	__delay_cycles(60000);
@@ -224,7 +236,78 @@ int main(void) {
 	__delay_cycles(60000);
 	__delay_cycles(60000);
 	__delay_cycles(60000);
+}
+
+/*
+ * uart_process
+ *
+ * checks the UART buffer status and processes full NMEA sentences
+ *
+ * returns:	0 if no fix was received or the last frame was not GPGGA at all
+ * 		n - the number of satellites in the last fix
+ */
+uint8_t uart_process(void) {
+	return 0;
+}
+
+/*
+ * tx_blips
+ *
+ * when called periodically (fast enough), transmits blips with ratio 1:5
+ * checks the timer-tick flag for timing
+ */
+void tx_blips(void) {
+	static uint8_t count = 0;	/* keeps track of blip state */
+
+	if (!tick)
+		return;
+
+	tick = 0;
+	count++;
+	switch (count) {
+		case 1:
+			P1OUT |= SI_DATA;
+			break;
+		case 2:
+			P1OUT &= ~SI_DATA;
+			break;
+		case 6:
+			count = 0;
+			break;
+		default:
+			break;
+	}
+}
+
+int main(void) {
+	uint16_t fix_sats = 0;
+	uint16_t i;
+	/* disable watchdog timer */
+	WDTCTL = WDTPW + WDTHOLD;	/* TODO use it! */
+	/* init all hardware components */
+	hw_init();
+	/* reset the radio chip from shutdown */
+	si4060_reset();
+	i = si4060_part_info();
+	if (i != 0x4060) {
+		/* TODO: indicate error condition on LED */
+		while(1);
+	}
+
+	si4060_nop();
+	gps_startup_delay();
 	gps_set_gga_only();
+
+	si4060_power_up();
+	si4060_setup(MOD_TYPE_OOK);
+	si4060_start_tx(0);
+	while (fix_sats < 5) {
+		//fix_sats = uart_process();
+		tx_blips();
+	}
+	si4060_stop_tx();
+	si4060_setup(MOD_TYPE_2FSK);
+
 	while(1);
 	gps_set_alwayslocate();
 }
@@ -275,3 +358,13 @@ __interrupt void ADC10_ISR(void)
 	}
 }
 
+/*
+ * Timer A0 ISR
+ *
+ * realises a systick function. tick-flag can be polled by main program
+ */
+#pragma vector = TIMER0_A0_VECTOR
+__interrupt void Timer_A (void)
+{
+	tick = 1;
+}

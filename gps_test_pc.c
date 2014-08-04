@@ -19,11 +19,13 @@ int main(void) {
 	char lat[8];
 	char lon[9];
 	char alt[6];
+	char sat[2];
 
 	int i;
 
 	printf("Is GPGGA sentence: %d\n", NMEA_sentence_is_GPGGA(sent));
-	if (GPGGA_get_data(sent, lat, lon, alt)) {
+	printf("GPGGA contains fix: %d\n", GPGGA_has_fix(sent));
+	if (GPGGA_get_data(sent, lat, lon, alt, sat)) {
 		printf("Fix ok\nlat: ");
 		for (i = 0; i < 8; i++)
 			printf("%c", *(lat+i));
@@ -33,6 +35,9 @@ int main(void) {
 		printf("\nalt: ");
 		for (i = 0; i < 6; i++)
 			printf("%c", *(alt+i));
+		printf("\nsat: ");
+		for (i = 0; i < 2; i++)
+			printf("%c", *(sat+i));
 		printf("\n");
 	} else {
 		printf("no fix available!\n");

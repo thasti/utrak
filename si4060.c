@@ -323,8 +323,10 @@ void si4060_stop_tx(void) {
  *
  * initializes the Si4060 by setting all neccesary internal registers.
  * has to be called after si4060_power_up.
+ *
+ * mod_type:	the type of modulation to use, use the MODEM_MOD_TYPE values (MOD_TYPE_*)
  */
-void si4060_setup(void) {
+void si4060_setup(uint8_t mod_type) {
 
 	/* set high performance mode */
 	si4060_set_property_8(PROP_GLOBAL,
@@ -347,7 +349,7 @@ void si4060_setup(void) {
 	/* use 2FSK from async GPIO0 */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_MOD_TYPE,
-			MOD_TYPE_2FSK | MOD_SOURCE_DIRECT | MOD_GPIO_0 | MOD_DIRECT_MODE_ASYNC);
+			(mod_type & 0x07) | MOD_SOURCE_DIRECT | MOD_GPIO_0 | MOD_DIRECT_MODE_ASYNC);
 	/* setup frequency deviation */
 	si4060_set_property_24(PROP_MODEM,
 			MODEM_FREQ_DEV,

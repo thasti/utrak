@@ -10,6 +10,16 @@
 #include "nmea.h"
 #include "string.h"
 
+/*
+ * NMEA_sentence_is_GPGGA
+ *
+ * tests, whether a full NMEA sentence contains is a GPGGA sentence
+ *
+ * sentence:	pointer to the sentence under test
+ *
+ * returns: 	1 if GPGGA,
+ * 		0 if not GPGGA
+ */
 uint8_t NMEA_sentence_is_GPGGA(char *sentence) {
 	uint8_t i;
 	const char pattern[] = "$GPGGA";
@@ -24,7 +34,42 @@ uint8_t NMEA_sentence_is_GPGGA(char *sentence) {
 	return 1;
 }
 
-uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt) {
+/*
+ * GPGGA_has_fix
+ *
+ * determines whether a GPGGA-message includes valid fix data
+ *
+ * sentence:	pointer to the sentence under test
+ *
+ * returns:	1 if fix is OK
+ * 		0 if fix is not OK
+ */
+uint8_t GPGGA_has_fix(char *sentence) {
+	uint8_t field = 0;
+	uint8_t len = 0;
+	uint8_t i;
+	/* one sentence is max. 83 characters */
+	for (i = 0; i < 83 && (*(sentence + i) != '\n'); i++) {
+		len++;
+		/* process preceeding field if field separator is reached */
+		if (*(sentence + i) == ',') {
+			switch (field) {
+				case FIX_FIELD:
+					if (*(sentence + i - 1) == '0')
+						return 0;
+					else
+						return 1;
+					break;
+				default:
+					break;
+			}
+			field++;
+		}
+	}
+	return 0;
+}
+
+uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sat) {
 	uint8_t i, tmp;
 	uint8_t field = 0;
 	uint8_t len = 0;
@@ -42,30 +87,33 @@ uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt) {
 			switch (field) {
 				case LAT_FIELD:
 					*(lat++) = '+';
-					for (tmp = 0; tmp < 7; tmp++) {
+					for (tmp = 0; tmp < LAT_LENGTH; tmp++) {
 						*(lat++) = *(sentence + i - len + 1 + tmp);
 					}
 					break;
 				case NS_FIELD:
 					if (*(sentence + i - 1) == 'S') {
-						*lat_cpy = '-';
+						*lat_cpy = '-';		/* overwrite the "+" */
 					}
 					break;
 				case LON_FIELD:
 					*(lon++) = '+';
-					for (tmp = 0; tmp < 8; tmp++) {
+					for (tmp = 0; tmp < LON_LENGTH; tmp++) {
 						*(lon++) = *(sentence + i - len + 1 + tmp);
 					}
 					break;
 				case EW_FIELD:
 					if (*(sentence + i - 1) == 'W') {
-						*lon_cpy = '-';
+						*lon_cpy = '-';		/* overwrite the "+" */
 					}
 					break;
 				case FIX_FIELD:
-					if (*(sentence + i - 1) == '0') 
+					if (*(sentence + i - 1) == '0')
 						return 0;
 					break;
+				case SAT_FIELD:
+					*(sat++) = *(sentence + i - len + 1);
+					*(sat++) = *(sentence + i - len + 2);
 				case ALT_FIELD:
 					atoi32(sentence + i - len + 1, len - 1, &alt_i);
 					/* alt is < 16bit, so we can safely multiply * 100 */

@@ -4,6 +4,10 @@
  * Stefan Biereigel
  *
  */
+#ifndef SI4060_H_
+#define SI4060_H_
+
+#include <inttypes.h>
 
 #define XO_FREQ			30000000UL
 #define RF_FREQ_HZ		434075000.0f
@@ -21,7 +25,7 @@ void si4060_power_up(void);
 void si4060_nop(void);
 void si4060_start_tx(uint8_t channel);
 void si4060_stop_tx(void);
-void si4060_setup(void);
+void si4060_setup(uint8_t mod_type);
 uint8_t si4060_get_property_8(uint8_t group, uint8_t prop);
 uint16_t si4060_part_info(void);
 
@@ -180,6 +184,8 @@ uint16_t si4060_part_info(void);
 #define FVCO_DIV_24_3		0x07
 /* PA_BIAS_CLKDUTY values */
 #define PA_BIAS_CLKDUTY_SIN_25	(0x03 << 6) /* for si4060  */
+
+#endif
 
 
 
