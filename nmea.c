@@ -20,7 +20,7 @@
  * returns: 	1 if GPGGA,
  * 		0 if not GPGGA
  */
-uint8_t NMEA_sentence_is_GPGGA(char *sentence) {
+uint8_t NMEA_sentence_is_GPGGA(volatile char *sentence) {
 	uint8_t i;
 	const char pattern[] = "$GPGGA";
 
@@ -44,7 +44,7 @@ uint8_t NMEA_sentence_is_GPGGA(char *sentence) {
  * returns:	1 if fix is OK
  * 		0 if fix is not OK
  */
-uint8_t GPGGA_has_fix(char *sentence) {
+uint8_t GPGGA_has_fix(volatile char *sentence) {
 	uint8_t field = 0;
 	uint8_t len = 0;
 	uint8_t i;
@@ -69,14 +69,19 @@ uint8_t GPGGA_has_fix(char *sentence) {
 	return 0;
 }
 
-uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sat, char *time) {
+uint8_t GPGGA_get_data(	volatile char *sentence,
+			volatile char *lat,
+			volatile char *lon,
+			volatile char *alt,
+			volatile char *sat,
+			volatile char *time) {
 	uint8_t i, tmp;
 	uint8_t field = 0;
 	uint8_t len = 0;
 	uint32_t alt_i = 0;
 
-	char *lat_cpy = lat;
-	char *lon_cpy = lon;
+	volatile char *lat_cpy = lat;
+	volatile char *lon_cpy = lon;
 
 	/* one sentence is max. 83 characters */
 	for (i = 0; i < 83 && (*(sentence + i) != '\n'); i++) {
@@ -119,15 +124,20 @@ uint8_t GPGGA_get_data(char *sentence, char *lat, char *lon, char *alt, char *sa
 				case SAT_FIELD:
 					*(sat++) = *(sentence + i - len + 1);
 					/* as opposed to the datasheet, sat number may have 1 or 2 chars */
-					if (*(sentence + i - len + 2) != ',')
+					if (*(sentence + i - len + 2) != ',') {
 						*(sat) = *(sentence + i - len + 2);
+					}
+					else {
+						*(sat) = *(sat - 1);
+						*(sat - 1) = '0';
+					}
 					break;
 				case ALT_FIELD:
 					atoi32(sentence + i - len + 1, len - 1, &alt_i);
 					/* alt is < 16bit, so we can safely multiply * 100 */
 					alt_i = alt_i * 328 / 100;
 					/* 20000 m ~ 65600 ft */
-					i32toa(alt_i, 6, alt);
+					i32toa(alt_i, ALT_LENGTH, alt);
 					break;
 				default:
 					break;

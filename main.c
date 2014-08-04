@@ -8,6 +8,7 @@
 #include <msp430.h>
 #include <inttypes.h>
 #include "main.h"
+#include "nmea.h"
 #include "si4060.h"
 #include "spi.h"
 #include "string.h"
@@ -29,7 +30,7 @@ volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
  */
 volatile uint16_t nmea_buf_index = 0;	/* the index for writing to the buffer */
 volatile uint16_t nmea_buf_rdy = 0;	/* the ready-flag (ISR -> main) */
-volatile char nmea_buf[83] = { 0 };	/* the actual buffer */
+volatile char nmea_buf[NMEA_BUF_SIZE] = { 0 };	/* the actual buffer */
 
 /*
  * the TX data buffer
@@ -37,16 +38,17 @@ volatile char nmea_buf[83] = { 0 };	/* the actual buffer */
  */
 uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
 uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
-char tx_buf[83] = "$$" PAYLOAD_NAME ",";	/* the actual buffer */
+char tx_buf[TX_BUF_SIZE] = "$$" PAYLOAD_NAME ",";	/* the actual buffer */
 
 /*
  * GPS fix data
  * extracted from NMEA sentences by GPS data processing
  */
-char tlm_lat[] = { 0 };
-char tlm_lon[] = { 0 };
-char tlm_alt[] = { 0 };
-char tlm_sat[] = { 0 };
+char tlm_lat[LAT_LENGTH] = { 0 };
+char tlm_lon[LON_LENGTH] = { 0 };
+char tlm_alt[ALT_LENGTH] = { 0 };
+char tlm_sat[SAT_LENGTH] = { 0 };
+char tlm_time[TIME_LENGTH] = { 0 };
 
 /*
  * hw_init
@@ -247,6 +249,22 @@ void gps_startup_delay(void) {
  * 		n - the number of satellites in the last fix
  */
 uint8_t uart_process(void) {
+	uint8_t i;
+	if (nmea_buf_rdy) {
+		nmea_buf_rdy = 0;
+		if (NMEA_sentence_is_GPGGA(nmea_buf)) {
+			P3OUT ^= BIT6;	/* DEBUG, GPGGA received */
+			if (GPGGA_has_fix(nmea_buf)) {
+				P3OUT ^= BIT7;	/* DEBUG, GPGGA has fix data */
+				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, tlm_sat, tlm_time);
+				if (!i) {
+					return 0;
+				}
+				atoi8(tlm_sat, SAT_LENGTH, &i);
+				return i;
+			}
+		}
+	}
 	return 0;
 }
 
@@ -291,6 +309,7 @@ int main(void) {
 	i = si4060_part_info();
 	if (i != 0x4060) {
 		/* TODO: indicate error condition on LED */
+		P3OUT &= ~BIT4;
 		while(1);
 	}
 
@@ -302,14 +321,17 @@ int main(void) {
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
 	while (fix_sats < 5) {
-		//fix_sats = uart_process();
+		fix_sats = uart_process();
 		tx_blips();
 	}
+	P3OUT ^= BIT5; /* DEBUG, fix ok -> to main loop */
 	si4060_stop_tx();
 	si4060_setup(MOD_TYPE_2FSK);
-
-	while(1);
 	gps_set_alwayslocate();
+
+	while(1) {
+		uart_process();
+	}
 }
 
 /*
@@ -324,7 +346,13 @@ __interrupt void USCI_A0_ISR(void)
 		case 0:						/* Vector 0 - no interrupt */
 			break;
 		case 2:						/* Vector 2 - RXIFG */
-			P3OUT ^= BIT7;
+			if (nmea_buf_index < (NMEA_BUF_SIZE - 1))
+				nmea_buf_index++;
+			if (UCA0RXBUF == '$')
+				nmea_buf_index = 0;
+			if (UCA0RXBUF == '\n')
+				nmea_buf_rdy = 1;
+			nmea_buf[nmea_buf_index] = UCA0RXBUF;
 			break;
 		case 4:						/* Vector 4 - TXIFG */
 			break;

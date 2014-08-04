@@ -15,6 +15,10 @@
 #define TX_BUF_START_OFFSET 	sizeof("$$" PAYLOAD_NAME ",") - 1
 #define TX_BUF_CHECKSUM_OFFSET	sizeof("$$") - 1
 
+/* buffer sizes */
+#define NMEA_BUF_SIZE	83
+#define TX_BUF_SIZE	83
+
 /* Port 1 */
 #define SI_SHDN	BIT1
 #define SI_DATA	BIT2
