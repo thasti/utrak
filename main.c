@@ -21,6 +21,7 @@
  * housekeeping variables
  */
 volatile uint16_t seconds = 0;		/* timekeeping via timer */
+volatile uint16_t overflows = 0;	/* ISR overflow counter */
 volatile uint16_t tick = 0;		/* flag for timer handling (ISR -> main) */
 volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
 
@@ -35,21 +36,27 @@ volatile char nmea_buf[NMEA_BUF_SIZE] = { 0 };	/* the actual buffer */
 /*
  * the TX data buffer
  * contains ASCII data, which is either transmitted as CW oder RTTY
+ *
+ * ! remember to change the initializer if any field lengths (except payload name) change !
+ * contains: time, lat, lon, alt, sats, voltage, temperature, checksum
  */
 uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
 uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
 uint16_t tx_buf_length = 0;			/* how many chars to send */
-char tx_buf[TX_BUF_SIZE] = "$$" PAYLOAD_NAME ",";	/* the actual buffer */
+char tx_buf[] =					/* the actual buffer */
+	"$$" PAYLOAD_NAME ",      ,       ,        ,      ,  ,    ,   *    \r\n";
 
 /*
  * GPS fix data
  * extracted from NMEA sentences by GPS data processing
  */
+char tlm_time[TIME_LENGTH] = { 0 };
 char tlm_lat[LAT_LENGTH] = { 0 };
 char tlm_lon[LON_LENGTH] = { 0 };
 char tlm_alt[ALT_LENGTH] = { 0 };
 char tlm_sat[SAT_LENGTH] = { 0 };
-char tlm_time[TIME_LENGTH] = { 0 };
+char tlm_volt[VOLT_LENGTH] = { 0 };
+char tlm_temp[TEMP_LENGTH] = { 0 };
 
 /*
  * hw_init
@@ -380,6 +387,63 @@ void tx_rtty(void) {
 	}
 }
 
+/*
+ * calculate_txbuf_checksum
+ *
+ * this routine calculates the 16bit checksum value used in the HAB protocol
+ * it uses the MSP430 hardware CRC generator
+ */
+uint16_t calculate_txbuf_checksum(void) {
+	int i;
+	CRCINIRES = 0xffff;
+	for (i = TX_BUF_CHECKSUM_BEGIN; i < TX_BUF_CHECKSUM_END; i++) {
+		CRCDI_L = tx_buf[i];
+	}
+	return CRCINIRES;
+}
+
+/*
+ * prepare_tx_buffer
+ *
+ * fills tx_buf with telemetry values. this depends on the
+ * GPS having a fix and telemetry being extracted before
+ *
+ * telemetry format:
+ * - callsign
+ * - time (as increasing number)
+ * - latitude
+ * - longitude
+ * - altitude
+ * - available satellites
+ * - voltage of the AAA cell
+ * - MSP430 temperature
+ * - (LED brightness value)
+ */
+void prepare_tx_buffer(void) {
+	int i;
+	uint16_t crc;
+	for (i = 0; i < TIME_LENGTH; i++)
+		tx_buf[TX_BUF_TIME_START + i] = tlm_time[i];
+	for (i = 0; i < LAT_LENGTH; i++)
+		tx_buf[TX_BUF_LAT_START + i] = tlm_lat[i];
+	for (i = 0; i < LON_LENGTH; i++)
+		tx_buf[TX_BUF_LON_START + i] = tlm_lon[i];
+	for (i = 0; i < ALT_LENGTH; i++)
+		tx_buf[TX_BUF_ALT_START + i] = tlm_alt[i];
+	for (i = 0; i < SAT_LENGTH; i++)
+		tx_buf[TX_BUF_SAT_START + i] = tlm_sat[i];
+	for (i = 0; i < VOLT_LENGTH; i++)
+		tx_buf[TX_BUF_VOLT_START + i] = tlm_volt[i];
+	for (i = 0; i < TEMP_LENGTH; i++)
+		tx_buf[TX_BUF_TEMP_START + i] = tlm_temp[i];
+	crc = calculate_txbuf_checksum();
+	i16tox(crc, &tx_buf[TX_BUF_CHECKSUM_START]);
+
+	tx_buf_length = sizeof(tx_buf) - 1;
+	/* trigger transmission */
+	tx_buf_rdy = 1;
+}
+
 
 int main(void) {
 	uint16_t fix_sats = 0;
@@ -390,6 +454,7 @@ int main(void) {
 	hw_init();
 	/* reset the radio chip from shutdown */
 	si4060_reset();
+	/* check radio communication */
 	i = si4060_part_info();
 	if (i != 0x4060) {
 		/* TODO: indicate error condition on LED */
@@ -397,29 +462,38 @@ int main(void) {
 		while(1);
 	}
 
+	/* wait for the GPS to boot */
 	gps_startup_delay();
+	/* tell it to output only GPGGA messages on every fix */
 	gps_set_gga_only();
-
+	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	si4060_power_up();
-	si4060_setup(MOD_TYPE_2FSK);
-	tx_buf_length = 8;
-	tx_buf_rdy = 1;
-	while(1) {
-		tx_rtty();
-	}
 	si4060_setup(MOD_TYPE_OOK);
+
+	/* entering wait state */
+	/* the tracker outputs RF blips while waiting for a GPS fix */
 	si4060_start_tx(0);
 	while (fix_sats < 5) {
 		fix_sats = uart_process();
 		tx_blips();
 	}
-	P3OUT ^= BIT5; /* DEBUG, fix ok -> to main loop */
 	si4060_stop_tx();
+	/* modulation from now on will be RTTY */
 	si4060_setup(MOD_TYPE_2FSK);
+	/* activate AlwaysLocate(tm) mode as fix is stable */
 	gps_set_alwayslocate();
+	seconds = TLM_INTERVAL + 1;
 
+	/* entering operational state */
+	/* in fixed intervals, a new TX buffer is prepared and transmitted */
+	P3OUT ^= BIT5; /* DEBUG, fix ok -> to main loop */
 	while(1) {
 		uart_process();
+		if ((!tx_buf_rdy) && (seconds > TLM_INTERVAL)) {
+			seconds = 0;
+			prepare_tx_buffer();
+		}
+		tx_rtty();
 	}
 }
 
@@ -484,4 +558,9 @@ __interrupt void ADC10_ISR(void)
 __interrupt void Timer_A (void)
 {
 	tick = 1;
+	overflows++;
+	if (overflows == 100) {
+		seconds++;
+		overflows = 0;
+	}
 }
