@@ -45,6 +45,7 @@ uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
 uint16_t tx_buf_length = 0;			/* how many chars to send */
 char tx_buf[] =					/* the actual buffer */
 	"$$" PAYLOAD_NAME ",xxxxxx,xxxxxxxxxx,xxxxxxxxxxx,xxxxxx,xx,xxxx,xxx*xxxx\r\n";
+	/*                  time   latitude   longitude   height sat vol tem chks */
 
 /*
  * GPS fix data
@@ -56,7 +57,7 @@ char tlm_lon[LON_LENGTH+1] = { 0 };
 char tlm_alt[ALT_LENGTH] = { 0 };
 char tlm_sat[SAT_LENGTH] = { 0 };
 char tlm_volt[VOLT_LENGTH] = { 0 };
-char tlm_temp[TEMP_LENGTH] = { 0 };
+char tlm_temp[TEMP_LENGTH+1] = { 0 };
 
 /*
  * hw_init
@@ -90,8 +91,9 @@ void hw_init(void) {
 	P1OUT |= CS;
 	P1REN |= MISO;
 	P1DIR = CS + SI_SHDN + SI_DATA;				/* GPIOs for output */
-	P1SEL1 |= MOSI + MISO;					/* USCI_B MOSI, MISO */
+	P1SEL1 |= ADC_IN + MOSI + MISO;					/* USCI_B MOSI, MISO */
 	P1SEL1 &= ~(SI_SHDN + SI_DATA + CS);
+	P1SEL0 |= ADC_IN;
 	P1SEL0 &= ~(SI_SHDN + SI_DATA + CS + MOSI + MISO);	/* USCI_B MOSI, MISO */
 
 	/* GPIO init Port 2 */
@@ -141,7 +143,7 @@ uint16_t get_battery_voltage(void) {
 	ADC10CTL0 = ADC10SHT_2 + ADC10ON;	/* ADC10ON, S&H=16 ADC clks */
 	ADC10CTL1 = ADC10SHP + ADC10SSEL0 + ADC10SSEL1;		/* ADCCLK = SMCLK */
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
-	ADC10MCTL0 = ADC10INCH_1;		/* A1 ADC input select; Vref=AVCC */
+	ADC10MCTL0 = ADC10INCH_0;		/* A1 ADC input select; Vref=AVCC */
 	ADC10IE = ADC10IE0;			/* Enable ADC conv complete interrupt */
 	__delay_cycles(5000);			/* Delay for Ref to settle */
 	voltage = 0;
@@ -165,7 +167,7 @@ uint16_t get_battery_voltage(void) {
  *
  * returns:	the temperature in degrees celsius
  */
-uint16_t get_die_temperature(void) {
+int16_t get_die_temperature(void) {
 	long temperature;
 
 	/* enable ADC */
@@ -422,13 +424,19 @@ uint16_t calculate_txbuf_checksum(void) {
 void prepare_tx_buffer(void) {
 	int i;
 	uint16_t crc;
-	uint16_t temp;
+	int16_t temp;
 	uint16_t voltage;
 
 	voltage = get_battery_voltage();
 	i16toa(voltage, VOLT_LENGTH, tlm_volt);
 	temp = get_die_temperature();
-	i16toa(temp, TEMP_LENGTH, tlm_temp);
+	if (temp < 0) {
+		tlm_temp[0] = '-';
+		temp = 0 - temp;
+	} else {
+		tlm_temp[0] = '+';
+	}
+	i16toa(temp, TEMP_LENGTH, tlm_temp + 1);
 
 	for (i = 0; i < TIME_LENGTH; i++)
 		tx_buf[TX_BUF_TIME_START + i] = tlm_time[i];
@@ -442,7 +450,7 @@ void prepare_tx_buffer(void) {
 		tx_buf[TX_BUF_SAT_START + i] = tlm_sat[i];
 	for (i = 0; i < VOLT_LENGTH; i++)
 		tx_buf[TX_BUF_VOLT_START + i] = tlm_volt[i];
-	for (i = 0; i < TEMP_LENGTH; i++)
+	for (i = 0; i < TEMP_LENGTH + 1; i++)
 		tx_buf[TX_BUF_TEMP_START + i] = tlm_temp[i];
 	crc = calculate_txbuf_checksum();
 	i16tox(crc, &tx_buf[TX_BUF_CHECKSUM_START]);
@@ -456,8 +464,10 @@ void prepare_tx_buffer(void) {
 int main(void) {
 	uint16_t fix_sats = 0;
 	uint16_t i;
-	/* disable watchdog timer */
-	WDTCTL = WDTPW + WDTHOLD;	/* TODO use it! */
+	/* set watchdog timer interval to 11 seconds */
+	/* reset occurs if Si4060 does not respond or software locks up */
+	/* divide SMCLK (5.370 MHz / 8) by by 2^23 in 32 bit timer */
+	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* init all hardware components */
 	hw_init();
 	/* reset the radio chip from shutdown */
@@ -465,16 +475,17 @@ int main(void) {
 	/* check radio communication */
 	i = si4060_part_info();
 	if (i != 0x4060) {
-		/* TODO: indicate error condition on LED */
+		/* TODO: indicate communication error condition on LED */
 		P3OUT &= ~BIT4;
 		while(1);
 	}
-
+	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* wait for the GPS to boot */
 	gps_startup_delay();
 	/* tell it to output only GPGGA messages on every fix */
 	gps_set_gga_only();
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
+	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();
 	si4060_setup(MOD_TYPE_OOK);
 
@@ -482,6 +493,7 @@ int main(void) {
 	/* the tracker outputs RF blips while waiting for a GPS fix */
 	si4060_start_tx(0);
 	while (fix_sats < 5) {
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		fix_sats = uart_process();
 		tx_blips();
 	}
@@ -494,8 +506,10 @@ int main(void) {
 
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
+	/* watchdog timer is active for resets, if somethings locks up */
 	P3OUT ^= BIT5; /* DEBUG, fix ok -> to main loop */
 	while(1) {
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		uart_process();
 		if ((!tx_buf_rdy) && (seconds > TLM_INTERVAL)) {
 			seconds = 0;
