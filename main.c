@@ -44,15 +44,15 @@ uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
 uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
 uint16_t tx_buf_length = 0;			/* how many chars to send */
 char tx_buf[] =					/* the actual buffer */
-	"$$" PAYLOAD_NAME ",      ,       ,        ,      ,  ,    ,   *    \r\n";
+	"$$" PAYLOAD_NAME ",xxxxxx,xxxxxxxxxx,xxxxxxxxxxx,xxxxxx,xx,xxxx,xxx*xxxx\r\n";
 
 /*
  * GPS fix data
  * extracted from NMEA sentences by GPS data processing
  */
 char tlm_time[TIME_LENGTH] = { 0 };
-char tlm_lat[LAT_LENGTH] = { 0 };
-char tlm_lon[LON_LENGTH] = { 0 };
+char tlm_lat[LAT_LENGTH+1] = { 0 };
+char tlm_lon[LON_LENGTH+1] = { 0 };
 char tlm_alt[ALT_LENGTH] = { 0 };
 char tlm_sat[SAT_LENGTH] = { 0 };
 char tlm_volt[VOLT_LENGTH] = { 0 };
@@ -432,9 +432,9 @@ void prepare_tx_buffer(void) {
 
 	for (i = 0; i < TIME_LENGTH; i++)
 		tx_buf[TX_BUF_TIME_START + i] = tlm_time[i];
-	for (i = 0; i < LAT_LENGTH; i++)
+	for (i = 0; i < LAT_LENGTH + 1; i++)
 		tx_buf[TX_BUF_LAT_START + i] = tlm_lat[i];
-	for (i = 0; i < LON_LENGTH; i++)
+	for (i = 0; i < LON_LENGTH + 1; i++)
 		tx_buf[TX_BUF_LON_START + i] = tlm_lon[i];
 	for (i = 0; i < ALT_LENGTH; i++)
 		tx_buf[TX_BUF_ALT_START + i] = tlm_alt[i];

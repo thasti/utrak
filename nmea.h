@@ -27,8 +27,8 @@ uint8_t GPGGA_get_data(	volatile char *sentence,
 /*
  * GPGGA field lengths (where fixed)
  */
-#define LAT_LENGTH	7
-#define LON_LENGTH	8
+#define LAT_LENGTH	9
+#define LON_LENGTH	10
 #define TIME_LENGTH	6
 #define SAT_LENGTH	2
 #define ALT_LENGTH	6
