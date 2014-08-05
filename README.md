@@ -20,17 +20,22 @@ from valid GPS data and telemetry data, packets are generated. the text string f
 
 ## power management
 focus of the mission is to get power consumption down as low as possible. this includes using all the available power saving features of the MSP430 and peripherals. this includes
-* low power modes (down to LPM3) of the MSP430
+* low power modes of the MSP430
 * disabling unused peripherals
 * power down mode of the GPS module
-* disabling RF stage 
+* disabling RF stage
 
 ## software flow
 software is held as simple as possible, avoiding software errors to cause lock-ups of the controller. WDT is used to recover from possible errors.
-* **t+0** wake up GPS from power down mode, wait for fix
-* **t+2** get GPS position and altitude, measure voltage and temperature, generate telemetry packet
-* **t+3** disable GPS, enable RF
-* **t+4** output telemetry via Si4060
-* **t+XX** disable RF, go to sleep
-* **t+120** restart from t+0
 
+* at power up: all hw is initialised, GPS is told to only output one sentence type, Si4060 is initialised
+* state 1: transmitting blips, waiting for a stable GPS fix
+* once a fix is there, the GPS is put into alwaysLocate mode
+* state 2: getting data from the GPS, generating telemetry, transmitting it
+
+### error conditions
+the software automatically tries to recover from all critical errors (by reseting the MSP430 and all peripherals) but indicates them on startup (before entering state 1) via the on board LED.
+* LED on after power up: no error
+* LED off after power up: communication error with Si4060
+* transmitting blips, LED on: waiting for GPS fix
+* transmitting nothing / RTTY, LED off: ready for flight

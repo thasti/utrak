@@ -77,7 +77,7 @@ char tlm_temp[TEMP_LENGTH+1] = { 0 };
 void hw_init(void) {
 	/* DEBUG */
 	P3DIR = BIT4 + BIT5 + BIT6 + BIT7;
-	P3OUT |= BIT4 + BIT5 + BIT6 + BIT7;
+	P3OUT = 0;
 
 	/* DCO init, SMCLK is 5.37MHz divided by 8 */
 	CSCTL0_H = 0xA5;					/* write CS password */
@@ -263,9 +263,7 @@ uint8_t uart_process(void) {
 	if (nmea_buf_rdy) {
 		nmea_buf_rdy = 0;
 		if (NMEA_sentence_is_GPGGA(nmea_buf)) {
-			P3OUT ^= BIT6;	/* DEBUG, GPGGA received */
 			if (GPGGA_has_fix(nmea_buf)) {
-				P3OUT ^= BIT7;	/* DEBUG, GPGGA has fix data */
 				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, tlm_sat, tlm_time);
 				if (!i) {
 					return 0;
@@ -475,8 +473,6 @@ int main(void) {
 	/* check radio communication */
 	i = si4060_part_info();
 	if (i != 0x4060) {
-		/* TODO: indicate communication error condition on LED */
-		P3OUT &= ~BIT4;
 		while(1);
 	}
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
@@ -488,10 +484,11 @@ int main(void) {
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();
 	si4060_setup(MOD_TYPE_OOK);
+	si4060_start_tx(0);
+	P3OUT |= BIT4;
 
 	/* entering wait state */
 	/* the tracker outputs RF blips while waiting for a GPS fix */
-	si4060_start_tx(0);
 	while (fix_sats < 5) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		fix_sats = uart_process();
@@ -507,7 +504,7 @@ int main(void) {
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */
-	P3OUT ^= BIT5; /* DEBUG, fix ok -> to main loop */
+	P3OUT &= ~BIT4;
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		uart_process();
@@ -555,7 +552,6 @@ __interrupt void USCI_A0_ISR(void)
 #pragma vector=ADC10_VECTOR
 __interrupt void ADC10_ISR(void)
 {
-	P3OUT ^= 0xff;
 	switch(ADC10IV)
 	{
 		case  0: break;                          // No interrupt
