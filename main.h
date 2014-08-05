@@ -10,7 +10,7 @@
 
 /* payload name */
 #define PAYLOAD_NAME "DK3SB"
-#define TLM_INTERVAL 60
+#define TLM_INTERVAL 30
 
 /* number of idle bits to transmit */
 #define NUM_IDLE_BITS	32

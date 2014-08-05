@@ -397,7 +397,7 @@ uint16_t calculate_txbuf_checksum(void) {
 	int i;
 	CRCINIRES = 0xffff;
 	for (i = TX_BUF_CHECKSUM_BEGIN; i < TX_BUF_CHECKSUM_END; i++) {
-		CRCDI_L = tx_buf[i];
+		CRCDIRB_L = tx_buf[i];
 	}
 	return CRCINIRES;
 }
@@ -422,6 +422,14 @@ uint16_t calculate_txbuf_checksum(void) {
 void prepare_tx_buffer(void) {
 	int i;
 	uint16_t crc;
+	uint16_t temp;
+	uint16_t voltage;
+
+	voltage = get_battery_voltage();
+	i16toa(voltage, VOLT_LENGTH, tlm_volt);
+	temp = get_die_temperature();
+	i16toa(temp, TEMP_LENGTH, tlm_temp);
+
 	for (i = 0; i < TIME_LENGTH; i++)
 		tx_buf[TX_BUF_TIME_START + i] = tlm_time[i];
 	for (i = 0; i < LAT_LENGTH; i++)
