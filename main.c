@@ -44,7 +44,7 @@ uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
 uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
 uint16_t tx_buf_length = 0;			/* how many chars to send */
 char tx_buf[] =					/* the actual buffer */
-	"$$" PAYLOAD_NAME ",xxxxxx,xxxxxxxxxx,xxxxxxxxxxx,xxxxxx,xx,xxxx,xxx*xxxx\r\n";
+	SYNC_PREFIX "$$" PAYLOAD_NAME ",xxxxxx,xxxxxxxxxx,xxxxxxxxxxx,xxxxxx,xx,xxxx,xxx*xxxx\n\n";
 	/*                  time   latitude   longitude   height sat vol tem chks */
 
 /*
