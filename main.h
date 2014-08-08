@@ -17,11 +17,13 @@
 /* length of non-GPS-telemetry fields */
 #define VOLT_LENGTH	4
 #define TEMP_LENGTH	2
+#define SENT_ID_LENGTH	5
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   "
 /* offset from buffer start to telemetry data */
 #define TX_BUF_START_OFFSET 	sizeof(SYNC_PREFIX "$$" PAYLOAD_NAME ",") - 1
-#define TX_BUF_TIME_START	TX_BUF_START_OFFSET
+#define TX_BUF_SENT_ID_START	TX_BUF_START_OFFSET
+#define TX_BUF_TIME_START	TX_BUF_SENT_ID_START + SENT_ID_LENGTH + 1
 #define TX_BUF_LAT_START	TX_BUF_TIME_START + TIME_LENGTH + 1
 /* lat and lon fields are one char longer for +/- */
 #define TX_BUF_LON_START	TX_BUF_LAT_START + LAT_LENGTH + 1 + 1

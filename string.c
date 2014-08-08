@@ -75,6 +75,30 @@ void atoi32(volatile char *string, uint8_t len, uint32_t *integer) {
 	}
 }
 
+/* atoi16
+ * converts a fixed-length input string to 16bit integer, stops at decimal points,
+ * so only integer part is returned
+ *
+ * the number MUST include a decimal portion (XX.XX)
+ */
+void atoi16(volatile char *string, uint8_t len, uint16_t *integer) {
+	uint8_t j;
+	uint16_t mult = 1;
+	uint8_t start = 0;
+
+	*integer = 0;
+	for (j = 0; j < len; j++) {
+		if (*(string + len - j - 1) == '.') {
+			start = 1;
+		} else {
+			if (start) {
+				*integer += mult * (*(string + len - j - 1) - '0');
+				mult *= 10;
+			}
+		}
+	}
+}
+
 /* atoi8
  * converts a fixed-length input string to 8bit integer, stops at decimal points,
  * so only integer part is returned

@@ -55,14 +55,14 @@ int main(void) {
 	printf("\n** CRC tests\n");
 	uint16_t crc = 0xffff;
 	//char testcheck[] = "hadie,181,10:42:10,54.422829,-6.741293,27799.3,1:10";
-	char testcheck[] = "DK3SB,080905,+5229.0342,+01248.6065,000203,04,1912,+29"; //*7301
+	char testcheck[] = "DK3SB,00003,142717,+5229.0368,+01248.6139,00097,05,1936,+31"; //*9156
 	//char testcheck[] = "123456789";
 	// see MSP430 datasheet about CRC
 	for (i = 0; i < sizeof(testcheck)-1; i++) {
 		crc = crc_xmodem_update(crc, testcheck[i]);
 	}
 	printf("CRC should be 0x002A for hadie\n");
-	printf("CRC should be 0x7301 for DK3SB\n");
+	printf("CRC should be 0x9156 for DK3SB\n");
 	printf("CRC should be 0x29B1 for 123456789");
 
 	i16tox(crc, tohex);

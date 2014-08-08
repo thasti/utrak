@@ -24,6 +24,7 @@ volatile uint16_t seconds = 0;		/* timekeeping via timer */
 volatile uint16_t overflows = 0;	/* ISR overflow counter */
 volatile uint16_t tick = 0;		/* flag for timer handling (ISR -> main) */
 volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
+uint16_t sent_id = 0;			/* sentence id */
 
 /*
  * the NMEA data buffer
@@ -44,13 +45,14 @@ uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
 uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
 uint16_t tx_buf_length = 0;			/* how many chars to send */
 char tx_buf[] =					/* the actual buffer */
-	SYNC_PREFIX "$$" PAYLOAD_NAME ",xxxxxx,xxxxxxxxxx,xxxxxxxxxxx,xxxxxx,xx,xxxx,xxx*xxxx\n\n";
-	/*                  time   latitude   longitude   height sat vol tem chks */
+	SYNC_PREFIX "$$" PAYLOAD_NAME ",xxxxx,xxxxxx,xxxxxxxxxx,xxxxxxxxxxx,xxxxx,xx,xxxx,xxx*xxxx\n\n";
+	/*                  		id    time   latitude   longitude   height sat vol tem chks */
 
 /*
- * GPS fix data
+ * GPS fix data and data for tlm string
  * extracted from NMEA sentences by GPS data processing
  */
+char tlm_sent_id[SENT_ID_LENGTH] = { 0 };
 char tlm_time[TIME_LENGTH] = { 0 };
 char tlm_lat[LAT_LENGTH+1] = { 0 };
 char tlm_lon[LON_LENGTH+1] = { 0 };
@@ -410,7 +412,8 @@ uint16_t calculate_txbuf_checksum(void) {
  *
  * telemetry format:
  * - callsign
- * - time (as increasing number)
+ * - sentence id
+ * - time
  * - latitude
  * - longitude
  * - altitude
@@ -425,6 +428,8 @@ void prepare_tx_buffer(void) {
 	int16_t temp;
 	uint16_t voltage;
 
+	sent_id++;
+	i16toa(sent_id, SENT_ID_LENGTH, tlm_sent_id);
 	voltage = get_battery_voltage();
 	i16toa(voltage, VOLT_LENGTH, tlm_volt);
 	temp = get_die_temperature();
@@ -436,6 +441,8 @@ void prepare_tx_buffer(void) {
 	}
 	i16toa(temp, TEMP_LENGTH, tlm_temp + 1);
 
+	for (i = 0; i < SENT_ID_LENGTH; i++)
+		tx_buf[TX_BUF_SENT_ID_START + i] = tlm_sent_id[i];
 	for (i = 0; i < TIME_LENGTH; i++)
 		tx_buf[TX_BUF_TIME_START + i] = tlm_time[i];
 	for (i = 0; i < LAT_LENGTH + 1; i++)

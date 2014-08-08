@@ -31,6 +31,6 @@ uint8_t GPGGA_get_data(	volatile char *sentence,
 #define LON_LENGTH	10
 #define TIME_LENGTH	6
 #define SAT_LENGTH	2
-#define ALT_LENGTH	6
+#define ALT_LENGTH	5
 
 #endif
