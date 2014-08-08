@@ -134,9 +134,6 @@ uint8_t GPGGA_get_data(	volatile char *sentence,
 					break;
 				case ALT_FIELD:
 					atoi32(sentence + i - len + 1, len - 1, &alt_i);
-					/* alt is < 16bit, so we can safely multiply * 100 */
-					alt_i = alt_i * 328 / 100;
-					/* 20000 m ~ 65600 ft */
 					i32toa(alt_i, ALT_LENGTH, alt);
 					break;
 				default:
