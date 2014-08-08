@@ -133,11 +133,45 @@ void i32toa(uint32_t in, uint8_t len, volatile char *out) {
  */
 void i16toa(uint16_t in, uint8_t len, volatile char *out) {
 	uint8_t i;
-	uint32_t mult = 1;
+	uint16_t mult = 1;
 	for (i = len; i > 0; i--) {
 		*(out + i - 1) = ((in % (mult*10)) / mult) + '0';
 		mult *= 10;
 	}
+}
+
+/* i16toa
+ * 16 bit number to variable-length output char
+ *
+ * returns:	length of string
+ */
+uint8_t i16toav(uint16_t in, volatile char *out) {
+	uint16_t mult = 10000;
+	uint8_t cnt = 0;
+	uint8_t start = 0;
+	uint8_t len = 0;
+	if (in == 0) {
+		*out = '0';
+		return 1;
+	}
+
+	while(mult > 0) {
+		if (in >= mult) {
+			in = in - mult;
+			cnt++;
+			start = 1;
+		} else {
+			*out = cnt + '0';
+			cnt = 0;
+			mult /= 10;
+			if (start) {
+				out++;
+				len++;
+			}
+		}
+	}
+
+	return len;
 }
 
 /* i16tox

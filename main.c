@@ -44,15 +44,14 @@ volatile char nmea_buf[NMEA_BUF_SIZE] = { 0 };	/* the actual buffer */
 uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
 uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
 uint16_t tx_buf_length = 0;			/* how many chars to send */
-char tx_buf[] =					/* the actual buffer */
-	SYNC_PREFIX "$$" PAYLOAD_NAME ",xxxxx,xxxxxx,xxxxxxxxxx,xxxxxxxxxxx,xxxxx,xx,xxxx,xxx*xxxx\n\n";
-	/*                  		id    time   latitude   longitude   height sat vol tem chks */
+char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the actual buffer */
 
 /*
  * GPS fix data and data for tlm string
  * extracted from NMEA sentences by GPS data processing
  */
-char tlm_sent_id[SENT_ID_LENGTH] = { 0 };
+uint8_t tlm_sent_id_length;
+char tlm_sent_id[SENT_ID_LENGTH_MAX] = { 0 };
 char tlm_time[TIME_LENGTH] = { 0 };
 char tlm_lat[LAT_LENGTH+1] = { 0 };
 char tlm_lon[LON_LENGTH+1] = { 0 };
@@ -429,7 +428,7 @@ void prepare_tx_buffer(void) {
 	uint16_t voltage;
 
 	sent_id++;
-	i16toa(sent_id, SENT_ID_LENGTH, tlm_sent_id);
+	tlm_sent_id_length = i16toav(sent_id, tlm_sent_id);
 	voltage = get_battery_voltage();
 	i16toa(voltage, VOLT_LENGTH, tlm_volt);
 	temp = get_die_temperature();
@@ -441,30 +440,53 @@ void prepare_tx_buffer(void) {
 	}
 	i16toa(temp, TEMP_LENGTH, tlm_temp + 1);
 
-	for (i = 0; i < SENT_ID_LENGTH; i++)
+	for (i = 0; i < tlm_sent_id_length; i++)
 		tx_buf[TX_BUF_SENT_ID_START + i] = tlm_sent_id[i];
+	tx_buf[TX_BUF_SENT_ID_START + i] = ',';
 	for (i = 0; i < TIME_LENGTH; i++)
 		tx_buf[TX_BUF_TIME_START + i] = tlm_time[i];
+	tx_buf[TX_BUF_TIME_START + i] = ',';
 	for (i = 0; i < LAT_LENGTH + 1; i++)
 		tx_buf[TX_BUF_LAT_START + i] = tlm_lat[i];
+	tx_buf[TX_BUF_LAT_START + i] = ',';
 	for (i = 0; i < LON_LENGTH + 1; i++)
 		tx_buf[TX_BUF_LON_START + i] = tlm_lon[i];
+	tx_buf[TX_BUF_LON_START + i] = ',';
 	for (i = 0; i < ALT_LENGTH; i++)
 		tx_buf[TX_BUF_ALT_START + i] = tlm_alt[i];
+	tx_buf[TX_BUF_ALT_START + i] = ',';
 	for (i = 0; i < SAT_LENGTH; i++)
 		tx_buf[TX_BUF_SAT_START + i] = tlm_sat[i];
+	tx_buf[TX_BUF_SAT_START + i] = ',';
 	for (i = 0; i < VOLT_LENGTH; i++)
 		tx_buf[TX_BUF_VOLT_START + i] = tlm_volt[i];
+	tx_buf[TX_BUF_VOLT_START + i] = ',';
 	for (i = 0; i < TEMP_LENGTH + 1; i++)
 		tx_buf[TX_BUF_TEMP_START + i] = tlm_temp[i];
+	tx_buf[TX_BUF_TEMP_START + i] = '*';
 	crc = calculate_txbuf_checksum();
 	i16tox(crc, &tx_buf[TX_BUF_CHECKSUM_START]);
+	for (i = 0; i < TX_BUF_POSTFIX_LENGTH; i++)
+		tx_buf[TX_BUF_POSTFIX_START + i] = TX_BUF_POSTFIX[i];
 
-	tx_buf_length = sizeof(tx_buf) - 1;
+	tx_buf_length = TX_BUF_FRAME_END;
 	/* trigger transmission */
 	tx_buf_rdy = 1;
 }
 
+/*
+ * init_tx_buffer
+ *
+ * helper routine to fill the TX buffer with "x"es - if any of those get transmitted,
+ * the field handling is not correct
+ */
+void init_tx_buffer(void) {
+	uint16_t i;
+
+	for (i = TX_BUF_START_OFFSET; i < TX_BUF_MAX_LENGTH; i++) {
+		tx_buf[i] = 'x';
+	}
+}
 
 int main(void) {
 	uint16_t fix_sats = 0;
@@ -475,6 +497,8 @@ int main(void) {
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* init all hardware components */
 	hw_init();
+	/* initialize the transmission buffer (for development only) */
+	init_tx_buffer();
 	/* reset the radio chip from shutdown */
 	si4060_reset();
 	/* check radio communication */

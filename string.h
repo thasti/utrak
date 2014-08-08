@@ -8,6 +8,7 @@ extern void atoid32(char *string, uint8_t len, uint32_t *integer, uint32_t *deci
 extern void atod32(char *string, uint8_t len, uint32_t *decimal);
 extern void i32toa(uint32_t in, uint8_t len, volatile char *out);
 extern void i16toa(uint16_t in, uint8_t len, volatile char *out);
+extern uint8_t i16toav(uint16_t in, volatile char *out);
 extern void i16tox(uint16_t x, char *out);
 
 #endif
