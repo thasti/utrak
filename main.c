@@ -50,7 +50,7 @@ char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the act
  * GPS fix data and data for tlm string
  * extracted from NMEA sentences by GPS data processing
  */
-uint8_t tlm_sent_id_length;
+uint16_t tlm_sent_id_length;
 char tlm_sent_id[SENT_ID_LENGTH_MAX] = { 0 };
 char tlm_time[TIME_LENGTH] = { 0 };
 char tlm_lat[LAT_LENGTH+1] = { 0 };
