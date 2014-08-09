@@ -36,7 +36,7 @@
 /* lat and lon fields are one char longer for +/- */
 #define TX_BUF_LON_START	TX_BUF_LAT_START + LAT_LENGTH + 1 + 1
 #define TX_BUF_ALT_START	TX_BUF_LON_START + LON_LENGTH + 1 + 1
-#define TX_BUF_SAT_START	TX_BUF_ALT_START + ALT_LENGTH + 1
+#define TX_BUF_SAT_START	TX_BUF_ALT_START + tlm_alt_length + 1
 #define TX_BUF_VOLT_START	TX_BUF_SAT_START + SAT_LENGTH + 1
 /* temperature field is one char longer for +/- */
 #define TX_BUF_TEMP_START	TX_BUF_VOLT_START + VOLT_LENGTH + 1
@@ -49,7 +49,7 @@
 
 #define TX_BUF_MAX_LENGTH	sizeof(SYNC_PREFIX "$$" PAYLOAD_NAME) - 1 + 1 + \
 				SENT_ID_LENGTH_MAX + 1 + TIME_LENGTH + 1 + LAT_LENGTH + 1 + LON_LENGTH + 1 + \
-				ALT_LENGTH + 1 + SAT_LENGTH + 1 + VOLT_LENGTH + 1 + TEMP_LENGTH + \
+				ALT_LENGTH_MAX + 1 + SAT_LENGTH + 1 + VOLT_LENGTH + 1 + TEMP_LENGTH + \
 				sizeof("*") - 1 + CHECKSUM_LENGTH + TX_BUF_POSTFIX_LENGTH
 
 /* buffer sizes */

@@ -55,7 +55,8 @@ char tlm_sent_id[SENT_ID_LENGTH_MAX] = { 0 };
 char tlm_time[TIME_LENGTH] = { 0 };
 char tlm_lat[LAT_LENGTH+1] = { 0 };
 char tlm_lon[LON_LENGTH+1] = { 0 };
-char tlm_alt[ALT_LENGTH] = { 0 };
+uint8_t tlm_alt_length;
+char tlm_alt[ALT_LENGTH_MAX] = { 0 };
 char tlm_sat[SAT_LENGTH] = { 0 };
 char tlm_volt[VOLT_LENGTH] = { 0 };
 char tlm_temp[TEMP_LENGTH+1] = { 0 };
@@ -265,7 +266,7 @@ uint8_t uart_process(void) {
 		nmea_buf_rdy = 0;
 		if (NMEA_sentence_is_GPGGA(nmea_buf)) {
 			if (GPGGA_has_fix(nmea_buf)) {
-				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, tlm_sat, tlm_time);
+				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, &tlm_alt_length, tlm_sat, tlm_time);
 				if (!i) {
 					return 0;
 				}
@@ -452,7 +453,7 @@ void prepare_tx_buffer(void) {
 	for (i = 0; i < LON_LENGTH + 1; i++)
 		tx_buf[TX_BUF_LON_START + i] = tlm_lon[i];
 	tx_buf[TX_BUF_LON_START + i] = ',';
-	for (i = 0; i < ALT_LENGTH; i++)
+	for (i = 0; i < tlm_alt_length; i++)
 		tx_buf[TX_BUF_ALT_START + i] = tlm_alt[i];
 	tx_buf[TX_BUF_ALT_START + i] = ',';
 	for (i = 0; i < SAT_LENGTH; i++)

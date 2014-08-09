@@ -73,6 +73,7 @@ uint8_t GPGGA_get_data(	volatile char *sentence,
 			volatile char *lat,
 			volatile char *lon,
 			volatile char *alt,
+			uint8_t *alt_length,
 			volatile char *sat,
 			volatile char *time) {
 	uint8_t i, tmp;
@@ -134,7 +135,7 @@ uint8_t GPGGA_get_data(	volatile char *sentence,
 					break;
 				case ALT_FIELD:
 					atoi16(sentence + i - len + 1, len - 1, &alt_i);
-					i16toa(alt_i, ALT_LENGTH, alt);
+					*alt_length = i16toav(alt_i, alt);
 					break;
 				default:
 					break;
