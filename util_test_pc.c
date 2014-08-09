@@ -35,6 +35,11 @@ int main(void) {
 	atoi32(test, len, &integer);
 	printf("Integer Portion: %zu\n", integer);
 
+	char neg[] = "-0.5";
+	uint16_t ret16;
+	atoi16(neg, sizeof(neg)-1, &ret16);
+	printf("-1 test: %d\n", ret16);
+
 	printf("\n** Integer to String tests\n");
 	integer = 300;
 
@@ -44,9 +49,10 @@ int main(void) {
 	char itoav[5];
 	uint8_t i;
 	printf("\n** i16toav tests\n");
-	printf("len 0: %d, len 1: %d, len 5: %d, len 20: %d, len 21: %d, len 10000: %d, len 65535: %d\n",
-			i16toav(0, itoav), i16toav(1, itoav), i16toav(5, itoav), 
-			i16toav(20, itoav), i16toav(21, itoav), i16toav(10000, itoav), i16toav(65535, itoav));
+	printf("len 0: %d, len 1: %d, len 5: %d, len 20: %d, len 21: %d, len 10000: %d, len 65535: %d len -1: %d\n",
+			i16toav(0, itoav), i16toav(1, itoav), i16toav(5, itoav),
+			i16toav(20, itoav), i16toav(21, itoav), i16toav(10000, itoav), i16toav(65535, itoav),
+			i16toav(-1, itoav));
 
 	i16toav(0, itoav);
 	printf("\n0: ");
@@ -74,6 +80,10 @@ int main(void) {
 		printf("%c", itoav[i]);
 	i16toav(65535, itoav);
 	printf("\n65535: ");
+	for (i = 0; i < 5; i++)
+		printf("%c", itoav[i]);
+	i16toav(-1, itoav);
+	printf("\n-1: ");
 	for (i = 0; i < 5; i++)
 		printf("%c", itoav[i]);
 
