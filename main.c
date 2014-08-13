@@ -77,10 +77,6 @@ char tlm_temp[TEMP_LENGTH+1] = { 0 };
  *
  */
 void hw_init(void) {
-	/* DEBUG */
-	P3DIR = BIT4 + BIT5 + BIT6 + BIT7;
-	P3OUT = 0;
-
 	/* DCO init, SMCLK is 5.37MHz divided by 8 */
 	CSCTL0_H = 0xA5;					/* write CS password */
 	CSCTL1 = 0;						/* set DCO to 5.37MHz */
@@ -90,18 +86,21 @@ void hw_init(void) {
 
 	/* GPIO init Port 1 */
 	P1OUT &= ~MISO;
-	P1OUT |= CS;
 	P1REN |= MISO;
-	P1DIR = CS + SI_SHDN + SI_DATA;				/* GPIOs for output */
+	P1DIR = SI_SHDN + SI_DATA;				/* GPIOs for output */
 	P1SEL1 |= ADC_IN + MOSI + MISO;					/* USCI_B MOSI, MISO */
-	P1SEL1 &= ~(SI_SHDN + SI_DATA + CS);
+	P1SEL1 &= ~(SI_SHDN + SI_DATA);
 	P1SEL0 |= ADC_IN;
-	P1SEL0 &= ~(SI_SHDN + SI_DATA + CS + MOSI + MISO);	/* USCI_B MOSI, MISO */
+	P1SEL0 &= ~(SI_SHDN + SI_DATA + MOSI + MISO);	/* USCI_B MOSI, MISO */
 
 	/* GPIO init Port 2 */
 	P2DIR = TXD;				/* GPIOs for output */
 	P2SEL1 |= RXD + TXD + SCLK;		/* USCI_A RXD, TXD, USCI_B CLK */
 	P2SEL0 &= ~(RXD + TXD + SCLK);		/* USCI_A RXD, TXD, USCI_B CLK */
+
+	/* GPIO init Port J */
+	PJOUT |= CS;
+	PJDIR = CS;
 
 	/* USCI_A (GPS UART) init */
 	UCA0CTL1 = UCSWRST; 			/* reset USCI */
@@ -145,7 +144,7 @@ uint16_t get_battery_voltage(void) {
 	ADC10CTL0 = ADC10SHT_2 + ADC10ON;	/* ADC10ON, S&H=16 ADC clks */
 	ADC10CTL1 = ADC10SHP + ADC10SSEL0 + ADC10SSEL1;		/* ADCCLK = SMCLK */
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
-	ADC10MCTL0 = ADC10INCH_0;		/* A1 ADC input select; Vref=AVCC */
+	ADC10MCTL0 = ADC10INCH_2;		/* A1 ADC input select; Vref=AVCC */
 	ADC10IE = ADC10IE0;			/* Enable ADC conv complete interrupt */
 	__delay_cycles(5000);			/* Delay for Ref to settle */
 	voltage = 0;
@@ -517,7 +516,6 @@ int main(void) {
 	si4060_power_up();
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
-	P3OUT |= BIT4;
 
 	/* entering wait state */
 	/* the tracker outputs RF blips while waiting for a GPS fix */
@@ -536,7 +534,6 @@ int main(void) {
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */
-	P3OUT &= ~BIT4;
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		uart_process();

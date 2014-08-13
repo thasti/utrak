@@ -56,10 +56,9 @@
 #define NMEA_BUF_SIZE	83
 
 /* Port 1 */
-#define ADC_IN	BIT0
-#define SI_SHDN	BIT1
-#define SI_DATA	BIT2
-#define CS	BIT3
+#define ADC_IN	BIT2
+#define SI_SHDN	BIT3
+#define SI_DATA	BIT4
 #define MOSI	BIT6
 #define MISO	BIT7
 
@@ -67,6 +66,9 @@
 #define RXD	BIT1
 #define TXD	BIT0
 #define SCLK	BIT2
+
+/* Port J */
+#define CS	BIT0
 
 /* ADC calibration locations */
 #define CALADC10_15V_30C  *((unsigned int *)0x1A1A)   // Temperature Sensor Calibration-30 C

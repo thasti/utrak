@@ -13,11 +13,11 @@ volatile uint8_t spi_data;
 
 
 inline void spi_select(void) {
-	P1OUT &= ~CS;
+	PJOUT &= ~CS;
 }
 
 inline void spi_deselect(void) {
-	P1OUT |= CS;
+	PJOUT |= CS;
 }
 
 inline uint8_t spi_write(uint8_t data) {
