@@ -56,6 +56,8 @@
 #define NMEA_BUF_SIZE	83
 
 /* Port 1 */
+#define LED_A	BIT0
+#define LED_K	BIT1
 #define ADC_IN	BIT2
 #define SI_SHDN	BIT3
 #define SI_DATA	BIT4

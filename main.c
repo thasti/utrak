@@ -85,9 +85,9 @@ void hw_init(void) {
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
-	P1OUT &= ~MISO;
+	P1OUT &= ~(MISO + LED_A + LED_K);
 	P1REN |= MISO;
-	P1DIR = SI_SHDN + SI_DATA;				/* GPIOs for output */
+	P1DIR = SI_SHDN + SI_DATA + LED_A + LED_K;				/* GPIOs for output */
 	P1SEL1 |= ADC_IN + MOSI + MISO;					/* USCI_B MOSI, MISO */
 	P1SEL1 &= ~(SI_SHDN + SI_DATA);
 	P1SEL0 |= ADC_IN;
@@ -294,9 +294,11 @@ void tx_blips(void) {
 	switch (count) {
 		case 1:
 			P1OUT |= SI_DATA;
+			P1OUT |= LED_A;
 			break;
 		case 5:
 			P1OUT &= ~SI_DATA;
+			P1OUT &= ~LED_A;
 			break;
 		case 30:
 			count = 0;
@@ -497,6 +499,7 @@ int main(void) {
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* init all hardware components */
 	hw_init();
+	P1OUT |= LED_A;
 	/* initialize the transmission buffer (for development only) */
 	init_tx_buffer();
 	/* reset the radio chip from shutdown */
@@ -530,7 +533,7 @@ int main(void) {
 	/* activate AlwaysLocate(tm) mode as fix is stable */
 	gps_set_alwayslocate();
 	seconds = TLM_INTERVAL + 1;
-
+	P1OUT &= ~LED_A;
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */

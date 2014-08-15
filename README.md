@@ -35,7 +35,6 @@ software is held as simple as possible, avoiding software errors to cause lock-u
 
 ### error conditions
 the software automatically tries to recover from all critical errors (by reseting the MSP430 and all peripherals) but indicates them on startup (before entering state 1) via the on board LED.
-* LED on after power up: no error
-* LED off after power up: communication error with Si4060
-* transmitting blips, LED on: waiting for GPS fix
+* LED on after power up: communication error with Si4060
+* transmitting blips, LED blinks: waiting for GPS fix
 * transmitting nothing / RTTY, LED off: ready for flight
