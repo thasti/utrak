@@ -1,7 +1,8 @@
-# pico-ballooning software
+# uTrak miniature tracker repository
 
 ## abstract 
-this repository contains software for the payload of a small high altitude balloon. software will be implemented for a MSP430 MCU, with test programs runnable on a PC.
+this repository contains software and hardware design files for the payload of a small high altitude balloon. software will be implemented for a MSP430 MCU, with test programs runnable on a PC.
+project documentation can be found here: http://88.198.50.117/dokuwiki/doku.php?id=projekte:utrak:start
 
 the following tasks shall be performed by the software:
 * filtering and reading GPGGA-sentences from GPS - extracting position, altitude
