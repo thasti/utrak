@@ -13,14 +13,15 @@
 /*
  * NMEA_sentence_is_GPGGA
  *
- * tests, whether a full NMEA sentence contains is a GPGGA sentence
+ * tests, whether a full NMEA sentence contains is a GGA sentence
+ * uBlox GNSS modules use GN as standard talker ID instead of GP
  *
  * sentence:	pointer to the sentence under test
  *
  * returns: 	1 if GPGGA,
  * 		0 if not GPGGA
  */
-uint8_t NMEA_sentence_is_GPGGA(volatile char *sentence) {
+uint8_t NMEA_sentence_is_GGA(volatile char *sentence) {
 	uint8_t i;
 	const char pattern[] = "$GPGGA";
 

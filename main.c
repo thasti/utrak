@@ -7,6 +7,7 @@
 
 #include <msp430.h>
 #include <inttypes.h>
+#include "gps.h"
 #include "main.h"
 #include "nmea.h"
 #include "si4060.h"
@@ -37,9 +38,6 @@ volatile char nmea_buf[NMEA_BUF_SIZE] = { 0 };	/* the actual buffer */
 /*
  * the TX data buffer
  * contains ASCII data, which is either transmitted as CW oder RTTY
- *
- * ! remember to change the initializer if any field lengths (except payload name) change !
- * contains: time, lat, lon, alt, sats, voltage, temperature, checksum
  */
 uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
 uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
@@ -199,57 +197,6 @@ int16_t get_die_temperature(void) {
 	return temperature;
 }
 
-/*
- * gps_set_gga_only
- *
- * tells the GPS to only output GPGGA-messages
- */
-void gps_set_gga_only(void) {
-	char ggaonly[] = "$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*29\r\n";
-	int i;
-
-	for (i = 0; i < sizeof(ggaonly); i++) {
-		while (!(UCA0IFG&UCTXIFG));
-		UCA0TXBUF = ggaonly[i];
-	}
-}
-
-/*
- * gps_set_alwayslocate
- *
- * tells the GPS to enter AlwaysLocate(TM) mode.
- * recommended only after a fix is available and uses >5 satellites,
- * otherwise fix seems not as stable
- *
- * AlwaysLocate(TM) mode can be exit by sending any byte to the GPS
- */
-void gps_set_alwayslocate(void) {
-	char alwayslocate[] = "$PMTK225,8*23\r\n";
-	int i;
-
-	for (i = 0; i < sizeof(alwayslocate); i++) {
-		while (!(UCA0IFG&UCTXIFG));
-		UCA0TXBUF = alwayslocate[i];
-	}
-}
-
-/*
- * gps_startup_delay
- *
- * waits for the GPS to start up. this value is empirical.
- * we could also wait for the startup string
- */
-void gps_startup_delay(void) {
-	/* wait for the GPS to startup */
-	__delay_cycles(60000);
-	__delay_cycles(60000);
-	__delay_cycles(60000);
-	__delay_cycles(60000);
-	__delay_cycles(60000);
-	__delay_cycles(60000);
-	__delay_cycles(60000);
-	__delay_cycles(60000);
-}
 
 /*
  * uart_process
@@ -263,7 +210,7 @@ uint8_t uart_process(void) {
 	uint8_t i;
 	if (nmea_buf_rdy) {
 		nmea_buf_rdy = 0;
-		if (NMEA_sentence_is_GPGGA(nmea_buf)) {
+		if (NMEA_sentence_is_GGA(nmea_buf)) {
 			if (GPGGA_has_fix(nmea_buf)) {
 				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, &tlm_alt_length, tlm_sat, tlm_time);
 				if (!i) {
@@ -421,7 +368,6 @@ uint16_t calculate_txbuf_checksum(void) {
  * - available satellites
  * - voltage of the AAA cell
  * - MSP430 temperature
- * - (LED brightness value)
  */
 void prepare_tx_buffer(void) {
 	int i;
@@ -512,8 +458,11 @@ int main(void) {
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* wait for the GPS to boot */
 	gps_startup_delay();
-	/* tell it to output only GPGGA messages on every fix */
+	/* tell it to use GPS only and output GGA messages on every fix */
+	gps_set_nmea();
+	gps_set_gps_only();
 	gps_set_gga_only();
+	gps_set_airborne_model();
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();
@@ -530,8 +479,8 @@ int main(void) {
 	si4060_stop_tx();
 	/* modulation from now on will be RTTY */
 	si4060_setup(MOD_TYPE_2FSK);
-	/* activate AlwaysLocate(tm) mode as fix is stable */
-	gps_set_alwayslocate();
+	/* activate power save mode as fix is stable */
+	gps_set_power_save();
 	seconds = TLM_INTERVAL + 1;
 	P1OUT &= ~LED_A;
 	/* entering operational state */

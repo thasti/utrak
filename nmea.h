@@ -3,7 +3,7 @@
 
 #include <inttypes.h>
 
-uint8_t NMEA_sentence_is_GPGGA(volatile char *sentence);
+uint8_t NMEA_sentence_is_GGA(volatile char *sentence);
 uint8_t GPGGA_has_fix(volatile char *sentence);
 uint8_t GPGGA_get_data(	volatile char *sentence,
 			volatile char *lat,

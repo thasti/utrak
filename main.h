@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "DK3SB"
+#define PAYLOAD_NAME "0x01"
 /* payload telemetry interval */
 #define TLM_INTERVAL 30
 /* telemetry string prefix for RX syncronisation */
