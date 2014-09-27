@@ -6,7 +6,7 @@
  */
 #ifdef TEST
 #include <stdio.h>
-#include "nmea.h"
+#include "../nmea.h"
 
 int main(void) {
 
@@ -21,12 +21,13 @@ int main(void) {
 	char alt[6];
 	char sat[2];
 	char time[6];
+	uint8_t alt_length;
 
 	int i;
 
-	printf("Is GPGGA sentence: %d\n", NMEA_sentence_is_GPGGA(sent));
+	printf("Is GPGGA sentence: %d\n", NMEA_sentence_is_GGA(sent));
 	printf("GPGGA contains fix: %d\n", GPGGA_has_fix(sent));
-	if (GPGGA_get_data(sent, lat, lon, alt, sat, time)) {
+	if (GPGGA_get_data(sent, lat, lon, alt, &alt_length, sat, time)) {
 		printf("Fix ok\nlat: ");
 		for (i = 0; i < 8; i++)
 			printf("%c", *(lat+i));

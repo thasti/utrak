@@ -7,7 +7,7 @@
  */
 #ifdef TEST
 #include <stdio.h>
-#include "si4060.h"
+#include "../si4060.h"
 
 int main(void) {
 	printf("\nSi4060 Power Up\n");

@@ -1,5 +1,5 @@
 SPI_TEST=spi_pc.c
-SRC_ALL=si4060.c
+SRC_ALL=../si4060.c
 TEST_BIN=si4060_test_pc
 
 test-pc: 

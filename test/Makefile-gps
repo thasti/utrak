@@ -1,4 +1,4 @@
-SRC_ALL=string.c nmea.c
+SRC_ALL=../string.c ../nmea.c
 TEST_BIN=gps_test_pc
 
 test-pc: 

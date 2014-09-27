@@ -1,4 +1,4 @@
-SRC_ALL=crc.c string.c
+SRC_ALL=crc.c ../string.c
 TEST_BIN=util_test_pc
 
 test-pc: 

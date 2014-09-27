@@ -7,7 +7,7 @@
 #ifdef TEST
 #include <stdio.h>
 #include <inttypes.h>
-#include "string.h"
+#include "../string.h"
 #include "crc.h"
 
 int main(void) {
