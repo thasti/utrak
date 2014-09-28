@@ -1,4 +1,5 @@
 #include <msp430.h>
+#include <inttypes.h>
 
 /*
  * gps_set_gps_only
@@ -137,6 +138,32 @@ void gps_set_nmea(void) {
 		UCA0TXBUF = compatibility[i];
 	}
 
+}
+
+#define TP_FREQ		16000000UL
+
+void gps_enable_timepulse(void) {
+	int i;
+	char timepulse[] = {
+		0xB5, 0x62, 0x06, 0x31, 32, 0x00,	/* UBX-CFG-TP5 */
+		0x00, 0x01, 0x00, 0x00,			/* timepulse1, version 1, reserved1 */
+		0x00, 0x00, 0x00, 0x00,			/* no cable delay, no RF group delay */
+		(uint8_t) (TP_FREQ),			/* frequency setting, little endian */
+		(uint8_t) (TP_FREQ >> 8),
+		(uint8_t) (TP_FREQ >> 16),
+		(uint8_t) (TP_FREQ >> 24),
+		0x00, 0x00, 0x00, 0x00,			/* same setting if lock is acquired */
+		0x00, 0x00, 0x00, 0x80,			/* pulse width 50% */
+		0x00, 0x00, 0x00, 0x00,			/* same setting if lock is acquired */
+		0x00, 0x00, 0x00, 0x00,			/* no user delay */
+		0b00001011, 0x00, 0x00, 0x00,		/* enable TP, lock to GNSS, setting is frequency */
+		0xfb, 0xca				/* checksum */
+	};
+
+	for (i = 0; i < sizeof(timepulse); i++) {
+		while (!(UCA0IFG&UCTXIFG));
+		UCA0TXBUF = timepulse[i];
+	}
 }
 
 
