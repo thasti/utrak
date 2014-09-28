@@ -154,6 +154,28 @@ void gps_set_nmea(void) {
 
 }
 
+/*
+ * gps_save_settings
+ *
+ * saves the GPS settings to flash. should be done when power save is disabled and all
+ * settings are configured. in case of unexpected GPS reboot, it should load the correct configuration.
+ */
+void gps_save_settings(void) {
+	int i;
+	char cfg[] = {
+		0xB5, 0x62, 0x06, 0x09, 12, 0,	/* UBX-CFG-CFG */
+		0x00, 0x00, 0x00, 0x00,		/* clear no sections */
+		0x1f, 0x1e, 0x00, 0x00,		/* save all sections */
+		0x00, 0x00, 0x00, 0x00,		/* load no sections */
+		0x58, 0x59
+	};
+
+	for (i = 0; i < sizeof(cfg); i++) {
+		while (!(UCA0IFG&UCTXIFG));
+		UCA0TXBUF = cfg[i];
+	}
+
+}
 
 /*
  * gps_startup_delay

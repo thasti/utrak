@@ -465,6 +465,7 @@ int main(void) {
 	gps_set_airborne_model();
 	gps_set_power_save();
 	gps_power_save(0);
+	gps_save_settings();
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();

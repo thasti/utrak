@@ -7,5 +7,6 @@ extern void gps_set_airborne_model(void);
 extern void gps_set_power_save(void);
 extern void gps_power_save(int on);
 extern void gps_set_nmea(void);
+extern void gps_save_settings(void);
 extern void gps_startup_delay(void);
 #endif
