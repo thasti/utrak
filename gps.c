@@ -101,18 +101,33 @@ void gps_set_power_save(void) {
 		UCA0TXBUF = powersave[i];
 	}
 
+}
+
+/*
+ * gps_power_save
+ *
+ * enables or disables the power save mode (which was configured before)
+ */
+void gps_power_save(int on) {
+	int i;
 	char recvmgmt[] = {
 		0xB5, 0x62, 0x06, 0x11, 2, 0,	/* UBX-CFG-RXM */
 		0x08, 0x01,			/* reserved, enable power save mode */
 		0x22, 0x92
 	};
+	if (!on) {
+		recvmgmt[7] = 0x00;		/* continuous mode */
+		recvmgmt[8] = 0x21;		/* new checksum */
+		recvmgmt[9] = 0x91;
+	}
 
 	for (i = 0; i < sizeof(recvmgmt); i++) {
 		while (!(UCA0IFG&UCTXIFG));
 		UCA0TXBUF = recvmgmt[i];
 	}
-
 }
+
+
 
 /*
  * gps_set_nmea

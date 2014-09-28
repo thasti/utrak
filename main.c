@@ -463,6 +463,8 @@ int main(void) {
 	gps_set_gps_only();
 	gps_set_gga_only();
 	gps_set_airborne_model();
+	gps_set_power_save();
+	gps_power_save(0);
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();
@@ -480,7 +482,7 @@ int main(void) {
 	/* modulation from now on will be RTTY */
 	si4060_setup(MOD_TYPE_2FSK);
 	/* activate power save mode as fix is stable */
-	gps_set_power_save();
+	gps_power_save(1);
 	seconds = TLM_INTERVAL + 1;
 	P1OUT &= ~LED_A;
 	/* entering operational state */
