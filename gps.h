@@ -9,4 +9,6 @@ extern void gps_power_save(int on);
 extern void gps_set_nmea(void);
 extern void gps_save_settings(void);
 extern void gps_startup_delay(void);
+extern void gps_enable_timepulse(void);
+
 #endif

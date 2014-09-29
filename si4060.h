@@ -9,7 +9,7 @@
 
 #include <inttypes.h>
 
-#define XO_FREQ			30000000UL
+#define XO_FREQ			16000000UL
 #define RF_FREQ_HZ		434075000.0f
 #define RF_DEV_HZ		100.0f
 #define F_INT			(2 * XO_FREQ / 8)
