@@ -194,8 +194,8 @@ void gps_enable_timepulse(void) {
 		0x00, 0x00, 0x00, 0x80,			/* pulse width 50% */
 		0x00, 0x00, 0x00, 0x00,			/* same setting if lock is acquired */
 		0x00, 0x00, 0x00, 0x00,			/* no user delay */
-		0b00001011, 0x00, 0x00, 0x00,		/* enable TP, lock to GNSS, setting is frequency */
-		0xfb, 0xca				/* checksum */
+		0b00001001, 0x00, 0x00, 0x00,		/* enable TP, lock to GNSS, setting is frequency */
+		0xf9, 0xc2				/* checksum */
 	};
 
 	for (i = 0; i < sizeof(timepulse); i++) {
