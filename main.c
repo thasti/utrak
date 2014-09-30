@@ -470,7 +470,7 @@ int main(void) {
 	gps_set_gps_only();
 	gps_set_gga_only();
 	gps_set_airborne_model();
-	gps_enable_timepulse();
+	//gps_enable_timepulse();
 	gps_set_power_save();
 	gps_power_save(0);
 	gps_save_settings();

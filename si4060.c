@@ -82,11 +82,11 @@ uint8_t si4060_get_cts(uint8_t read_response) {
 	uint8_t timeout = 0;
 	if (!read_response) {
 		while (si4060_read_cmd_buf(1) != 0xff && timeout < SI_TIMEOUT) {
-			timeout++;
+			//timeout++;
 		}
 	} else {
 		while (temp != 0xff && timeout < SI_TIMEOUT) {
-			timeout++;
+			//timeout++;
 			temp = si4060_read_cmd_buf(0);
 			if (temp != 0xff) {
 				spi_deselect();
@@ -111,7 +111,7 @@ void si4060_power_up(void) {
 	spi_select();
 	spi_write(CMD_POWER_UP);
 	spi_write(FUNC);
-	spi_write(TCXO);			/* TCXO if used */
+	spi_write(0);			/* TCXO if used */
 	spi_write((uint8_t) (XO_FREQ >> 24));
 	spi_write((uint8_t) (XO_FREQ >> 16));
 	spi_write((uint8_t) (XO_FREQ >> 8));
@@ -348,9 +348,11 @@ void si4060_setup(uint8_t mod_type) {
 	si4060_set_property_8(PROP_GLOBAL,
 			GLOBAL_CONFIG,
 			GLOBAL_RESERVED | POWER_MODE_HIGH_PERF | SEQUENCER_MODE_FAST);
+	/*
 	si4060_set_property_8(PROP_GLOBAL,
 			GLOBAL_XO_TUNE,
 			0x00);
+	*/
 	/* set up GPIOs */
 	si4060_gpio_pin_cfg(GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
