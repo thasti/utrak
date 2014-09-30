@@ -125,14 +125,7 @@ uint8_t GPGGA_get_data(	volatile char *sentence,
 					break;
 				case SAT_FIELD:
 					*(sat++) = *(sentence + i - len + 1);
-					/* as opposed to the datasheet, sat number may have 1 or 2 chars */
-					if (*(sentence + i - len + 2) != ',') {
-						*(sat) = *(sentence + i - len + 2);
-					}
-					else {
-						*(sat) = *(sat - 1);
-						*(sat - 1) = '0';
-					}
+					*(sat) = *(sentence + i - len + 2);
 					break;
 				case ALT_FIELD:
 					atoi16(sentence + i - len + 1, len - 1, &alt_i);
