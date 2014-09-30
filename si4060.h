@@ -17,6 +17,9 @@
 #define FDIV_FRAC		((RF_FREQ_HZ - F_INT * (int)FDIV_INTE)*((uint32_t)1 << 19)) / F_INT
 #define FDEV			((((uint32_t)1 << 19) * 8 * RF_DEV_HZ)/(2*XO_FREQ))
 
+/* number of retries for SPI transmission (reading CTS) */
+#define SI_TIMEOUT		100
+
 /* function prototypes */
 void si4060_shutdown(void);
 void si4060_wakeup(void);

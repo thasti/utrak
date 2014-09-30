@@ -71,6 +71,33 @@ uint8_t si4060_read_cmd_buf(uint8_t deselect) {
 }
 
 /*
+ * si4060_get_cts
+ *
+ * waits for a CTS from the Si4060, includes a "time out"
+ *
+ * read_response: do not deselect the slave, if you want to read from it afterwards
+ */
+uint8_t si4060_get_cts(uint8_t read_response) {
+	uint8_t temp = 0;
+	uint8_t timeout = 0;
+	if (!read_response) {
+		while (si4060_read_cmd_buf(1) != 0xff && timeout < SI_TIMEOUT) {
+			timeout++;
+		}
+	} else {
+		while (temp != 0xff && timeout < SI_TIMEOUT) {
+			timeout++;
+			temp = si4060_read_cmd_buf(0);
+			if (temp != 0xff) {
+				spi_deselect();
+			}
+		}
+	}
+	return 0;
+
+}
+
+/*
  * si4060_power_up
  *
  * powers up the Si4060 by issuing the POWER_UP command
@@ -80,7 +107,7 @@ uint8_t si4060_read_cmd_buf(uint8_t deselect) {
  */
 void si4060_power_up(void) {
 	/* wait for CTS */
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_POWER_UP);
 	spi_write(FUNC);
@@ -91,7 +118,7 @@ void si4060_power_up(void) {
 	spi_write((uint8_t) XO_FREQ);
 	spi_deselect();
 	/* wait for CTS */
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
@@ -104,7 +131,7 @@ void si4060_change_state(uint8_t state) {
 	spi_write(CMD_CHANGE_STATE);
 	spi_write(state);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 
 }
 
@@ -117,7 +144,7 @@ void si4060_nop(void) {
 	spi_select();
 	spi_write(CMD_NOP);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
@@ -137,7 +164,7 @@ void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
 	spi_write(prop);
 	spi_write(val);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
@@ -158,12 +185,7 @@ uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
 	spi_write(1);
 	spi_write(prop);
 	spi_deselect();
-	while (temp != 0xff) {
-		temp = si4060_read_cmd_buf(0);
-		if (temp != 0xff) {
-			spi_deselect();
-		}
-	}
+	si4060_get_cts(1);
 	temp = spi_read(); /* read property */
 	spi_deselect();
 	return temp;
@@ -187,7 +209,7 @@ void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
@@ -209,7 +231,7 @@ void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
@@ -232,7 +254,7 @@ void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
@@ -255,7 +277,7 @@ void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gp
 	spi_write(SDO_MODE_DONOTHING);
 	spi_write(drvstrength);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
@@ -275,13 +297,7 @@ uint16_t si4060_part_info(void) {
 	spi_select();
 	spi_write(CMD_PART_INFO);
 	spi_deselect();
-	/* do not deselect after reading CTS */
-	while (temp != 0xff) {
-		temp = si4060_read_cmd_buf(0);
-		if (temp != 0xff) {
-			spi_deselect();
-		}
-	}
+	si4060_get_cts(1);
 	spi_read();	 	/* ignore CHIPREV */
 	temp = spi_read(); 	/* read PART[0] */
 	temp = temp << 8;
@@ -306,7 +322,7 @@ void si4060_start_tx(uint8_t channel) {
 	spi_write(0x00);
 	spi_write(0x00);
 	spi_deselect();
-	while (si4060_read_cmd_buf(1) != 0xff);
+	si4060_get_cts(0);
 }
 
 /*
