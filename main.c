@@ -229,8 +229,10 @@ uint8_t uart_process(void) {
  *
  * when called periodically (fast enough), transmits blips with ratio 1:5
  * checks the timer-tick flag for timing
+ *
+ * blips slow when no fix is available, and fast if fix is available but not enough sats
  */
-void tx_blips(void) {
+void tx_blips(uint8_t sats) {
 	static uint8_t count = 0;	/* keeps track of blip state */
 
 	if (!tick)
@@ -248,6 +250,11 @@ void tx_blips(void) {
 			P1OUT &= ~LED_A;
 			break;
 		case 30:
+			if (sats != 0) {
+				count = 0;
+			}
+			break;
+		case 60:
 			count = 0;
 			break;
 		default:
@@ -478,7 +485,7 @@ int main(void) {
 	while (fix_sats < 5) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		fix_sats = uart_process();
-		tx_blips();
+		tx_blips(fix_sats);
 	}
 	si4060_stop_tx();
 	/* modulation from now on will be RTTY */
