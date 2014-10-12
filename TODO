@@ -1,0 +1,10 @@
+TODO list for tracker software
+==============================
+
+If you want to help with software development of the tracker software, the following change may be an interesting field of operation.
+
+* Disable periodic output of NMEA, query positions in UBX format from GPS
+* Handle responses from uBlox to commands (ack/nak) - perform actions accordingly
+* Periodically poll the GPS for being in sleep mode, if it isn't get it into it
+* Reset Si4060 only if it does not start up correctly (instead of letting the MCU reset)
+    * Needed infrastructure: global buffer for current settings of Si4060 (freq, mode, deviation)
