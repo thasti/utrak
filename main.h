@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x01"
+#define PAYLOAD_NAME "0xFC"
 /* payload telemetry interval */
 #define TLM_INTERVAL 30
 /* telemetry string prefix for RX syncronisation */
@@ -56,8 +56,8 @@
 #define NMEA_BUF_SIZE	83
 
 /* Port 1 */
-#define LED_A	BIT0
-#define LED_K	BIT1
+#define CLK_GPS	BIT0
+#define CLK_SI	BIT1
 #define ADC_IN	BIT2
 #define SI_SHDN	BIT3
 #define SI_DATA	BIT4

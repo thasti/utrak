@@ -178,25 +178,34 @@ void gps_save_settings(void) {
 
 }
 
-#define TP_FREQ		16000000UL
+#define TP_PERIOD	1000000UL
+#define TP_LEN		100000UL
 
 void gps_enable_timepulse(void) {
 	int i;
-	char timepulse[] = {
+	char timepulse[40] = {
 		0xB5, 0x62, 0x06, 0x31, 32, 0x00,	/* UBX-CFG-TP5 */
 		0x00, 0x01, 0x00, 0x00,			/* timepulse1, version 1, reserved1 */
 		0x00, 0x00, 0x00, 0x00,			/* no cable delay, no RF group delay */
-		(uint8_t) (TP_FREQ),			/* frequency setting, little endian */
-		(uint8_t) (TP_FREQ >> 8),
-		(uint8_t) (TP_FREQ >> 16),
-		(uint8_t) (TP_FREQ >> 24),
+		(uint8_t) (TP_PERIOD),			/* period time, little endian */
+		(uint8_t) (TP_PERIOD >> 8),
+		(uint8_t) (TP_PERIOD >> 16),
+		(uint8_t) (TP_PERIOD >> 24),
 		0x00, 0x00, 0x00, 0x00,			/* same setting if lock is acquired */
-		0x00, 0x00, 0x00, 0x80,			/* pulse width 50% */
+		(uint8_t) (TP_LEN),			/* pulse length, little endian */
+		(uint8_t) (TP_LEN >> 8),
+		(uint8_t) (TP_LEN >> 16),
+		(uint8_t) (TP_LEN >> 24),
 		0x00, 0x00, 0x00, 0x00,			/* same setting if lock is acquired */
 		0x00, 0x00, 0x00, 0x00,			/* no user delay */
-		0b00001001, 0x00, 0x00, 0x00,		/* enable TP, lock to GNSS, setting is frequency */
-		0xf9, 0xc2				/* checksum */
+		0b00110011, 0x00, 0x00, 0x00,		/* enable TP, lock to GNSS, setting is length */
+		0x00, 0x00				/* placeholder for checksum */
 	};
+
+	for (i = 2; i < sizeof(timepulse)-2; i++) {
+		timepulse[38] += timepulse[i];		/* calculate checksum */
+		timepulse[39] += timepulse[38];
+	}
 
 	for (i = 0; i < sizeof(timepulse); i++) {
 		while (!(UCA0IFG&UCTXIFG));

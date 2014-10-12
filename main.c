@@ -26,6 +26,9 @@ volatile uint16_t overflows = 0;	/* ISR overflow counter */
 volatile uint16_t tick = 0;		/* flag for timer handling (ISR -> main) */
 volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
 uint16_t sent_id = 0;			/* sentence id */
+volatile uint32_t frequency;		/* measured frequency (ISR -> main) */
+volatile uint16_t fc_ovf;		/* frequency counter ISR overflow counter */
+volatile uint16_t fc_tick;		/* flag for frequency handling */
 
 /*
  * the NMEA data buffer
@@ -83,13 +86,13 @@ void hw_init(void) {
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
-	P1OUT &= ~(MISO + LED_A + LED_K);
+	P1OUT &= ~(MISO + CLK_GPS + CLK_SI);
 	P1REN |= MISO;
-	P1DIR = SI_SHDN + SI_DATA + LED_A + LED_K;				/* GPIOs for output */
-	P1SEL1 |= ADC_IN + MOSI + MISO;					/* USCI_B MOSI, MISO */
-	P1SEL1 &= ~(SI_SHDN + SI_DATA);
+	P1DIR = SI_SHDN + SI_DATA;					/* GPIOs for output */
+	P1SEL1 |= ADC_IN + MOSI + MISO + CLK_SI;			/* USCI_B MOSI, MISO */
+	P1SEL1 &= ~(SI_SHDN + SI_DATA + CLK_GPS);
 	P1SEL0 |= ADC_IN;
-	P1SEL0 &= ~(SI_SHDN + SI_DATA + MOSI + MISO);	/* USCI_B MOSI, MISO */
+	P1SEL0 &= ~(SI_SHDN + SI_DATA + MOSI + MISO + CLK_SI + CLK_GPS);	/* USCI_B MOSI, MISO */
 
 	/* GPIO init Port 2 */
 	P2DIR = TXD;				/* GPIOs for output */
@@ -123,6 +126,12 @@ void hw_init(void) {
 	TA0CCTL0 = CCIE;			/* TACCR0 interrupt enabled */
 	TA0CCR0 = 6712;
 	TA0CTL = TASSEL_2 + MC_1;		/* SMCLK, UP mode */
+
+	/* external clock for Timer A1 */
+	TA1CTL = TASSEL__TACLK + MC__CONTINUOUS + TACLR + TAIE;
+
+	P1IES |= CLK_GPS;			/* interrupt on falling edge */
+	P1IE &= ~CLK_GPS;			/* deactivate interrupt on reset */
 
 	/* Enable Interrupts */
 	__bis_SR_register(GIE);			/* set interrupt enable bit */
@@ -243,11 +252,9 @@ void tx_blips(uint8_t sats) {
 	switch (count) {
 		case 1:
 			P1OUT |= SI_DATA;
-			P1OUT |= LED_A;
 			break;
 		case 5:
 			P1OUT &= ~SI_DATA;
-			P1OUT &= ~LED_A;
 			break;
 		case 30:
 			if (sats != 0) {
@@ -452,7 +459,6 @@ int main(void) {
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* init all hardware components */
 	hw_init();
-	P1OUT |= LED_A;
 	/* initialize the transmission buffer (for development only) */
 	init_tx_buffer();
 	/* reset the radio chip from shutdown */
@@ -470,7 +476,7 @@ int main(void) {
 	gps_set_gps_only();
 	gps_set_gga_only();
 	gps_set_airborne_model();
-	//gps_enable_timepulse();
+	gps_enable_timepulse();
 	gps_set_power_save();
 	gps_power_save(0);
 	gps_save_settings();
@@ -493,7 +499,6 @@ int main(void) {
 	/* activate power save mode as fix is stable */
 	gps_power_save(1);
 	seconds = TLM_INTERVAL + 1;
-	P1OUT &= ~LED_A;
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */
@@ -573,4 +578,35 @@ __interrupt void Timer_A (void)
 		seconds++;
 		overflows = 0;
 	}
+}
+
+/*
+ * Port1 ISR
+ *
+ * measure TA1CLK frequency
+ */
+#pragma vector = PORT1_VECTOR
+__interrupt void capture (void)
+{
+	static uint16_t old_val = 0;
+	uint16_t new_val;
+
+	new_val = TA1R;
+	frequency = fc_ovf * ((uint32_t)1<<16) + new_val - old_val;
+	fc_ovf = 0;
+	fc_tick = 1;
+	old_val = new_val;
+	P1IFG &= ~CLK_GPS;
+}
+
+/*
+ * Timer A1 ISR
+ *
+ * counts timer overflows
+ */
+#pragma vector = TIMER1_A1_VECTOR
+__interrupt void count_ovf (void)
+{
+	fc_ovf++;
+	TA1IV &= ~TA1IV_TAIFG;
 }
