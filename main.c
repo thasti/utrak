@@ -499,6 +499,7 @@ int main(void) {
 	/* activate power save mode as fix is stable */
 	gps_power_save(1);
 	seconds = TLM_INTERVAL + 1;
+	P1IE |= CLK_GPS;			/* activate frequency counter */
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */

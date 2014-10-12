@@ -353,10 +353,13 @@ void si4060_setup(uint8_t mod_type) {
 			GLOBAL_XO_TUNE,
 			0x00);
 	*/
+	si4060_set_property_8(PROP_GLOBAL,
+			GLOBAL_CLK_CFG,
+			DIV_CLK_EN);
 	/* set up GPIOs */
 	si4060_gpio_pin_cfg(GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
-			GPIO_MODE_DONOTHING,
+			GPIO_MODE_DIV_CLK,
 			PULL_CTL + GPIO_MODE_INPUT,
 			DRV_STRENGTH_HIGH);
 	/* disable preamble */
