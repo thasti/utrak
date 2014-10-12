@@ -8,6 +8,10 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
+#ifndef TA1IV_TAIFG
+#define TA1IV_TAIFG TA1IV_TA1IFG
+#endif
+
 /* payload name */
 #define PAYLOAD_NAME "0xFC"
 /* payload telemetry interval */
