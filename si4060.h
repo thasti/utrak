@@ -105,14 +105,14 @@ uint16_t si4060_part_info(void);
 #define TCXO		0x01		/* select if TCXO (1) or crystal (0) is used */
 
 /* GLOBAL_CLK_CFG arguments */
-#define DIV_CLK_EN			0x40	/* enable divided clock output */
+#define DIV_CLK_EN		0x40	/* enable divided clock output */
 #define DIV_CLK_SEL_1		0x00	/* divide clock / 1 */
-#define DIV_CLK_SEL_2		0x08	/* divide clock / 1 */
-#define DIV_CLK_SEL_3		0x09	/* divide clock / 1 */
-#define DIV_CLK_SEL_7_5		0x0A	/* divide clock / 1 */
-#define DIV_CLK_SEL_10		0x0B	/* divide clock / 1 */
-#define DIV_CLK_SEL_15		0x0C	/* divide clock / 1 */
-#define DIV_CLK_SEL_30		0x0D	/* divide clock / 1 */
+#define DIV_CLK_SEL_2		0x08	/* divide clock / 2 */
+#define DIV_CLK_SEL_3		0x09	/* divide clock / 3 */
+#define DIV_CLK_SEL_7_5		0x0A	/* divide clock / 7.5 */
+#define DIV_CLK_SEL_10		0x0B	/* divide clock / 10 */
+#define DIV_CLK_SEL_15		0x0C	/* divide clock / 15 */
+#define DIV_CLK_SEL_30		0x0D	/* divide clock / 30 */
 #define CLK_32K_SEL_XTAL	0x02	/* internal crystal oscillator */
 #define CLK_32K_SEL_RC		0x01	/* internal rc oscillator*/
 #define CLK_32K_SEL_OFF		0x00	/* 32kHz clock disabled */
