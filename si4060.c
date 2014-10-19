@@ -395,9 +395,6 @@ void si4060_setup(uint8_t mod_type) {
 	si4060_set_property_24(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_FRAC,
 			(uint32_t)(FDIV_FRAC));
-	/* set the channel step size  */
-	si4060_set_property_16(PROP_FREQ_CONTROL,
-			FREQ_CONTROL_CHANNEL_STEP_SIZE,
-			(uint16_t)FDEV);
+	/* TODO set the channel step size (if SPI frequency changing is used) */
 
 }

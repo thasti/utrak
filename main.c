@@ -79,7 +79,7 @@ void hw_init(void) {
 	CSCTL0_H = 0xA5;					/* write CS password */
 	CSCTL1 = 0;						/* set DCO to 5.37MHz */
 	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* DCO as ACLK, SMCLK, MCLK */
-	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
+	CSCTL3 = DIVA__8 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
@@ -242,10 +242,12 @@ void tx_blips(uint8_t sats) {
 	count++;
 	switch (count) {
 		case 1:
-			si4060_start_tx(0);
+			P1OUT |= SI_DATA;
+			P1OUT |= LED_A;
 			break;
 		case 5:
-			si4060_stop_tx();
+			P1OUT &= ~SI_DATA;
+			P1OUT &= ~LED_A;
 			break;
 		case 30:
 			if (sats != 0) {
@@ -284,6 +286,7 @@ void tx_rtty(void) {
 	}
 	/* tx_buffer is ready */
 	if (tx_state == 0) {
+		si4060_start_tx(0);
 		tx_state = 1;
 		tx_buf_index = 0;
 	}
@@ -298,8 +301,7 @@ void tx_rtty(void) {
 	/* run this part only every second tick */
 	switch (char_state) {
 		case IDLE:
-			si4060_stop_tx();
-			si4060_start_tx(1);
+			P1OUT |= SI_DATA;
 			i++;
 			if (i == NUM_IDLE_BITS) {
 				char_state = START;
@@ -307,8 +309,7 @@ void tx_rtty(void) {
 			}
 			break;
 		case START:
-			si4060_stop_tx();
-			si4060_start_tx(0);
+			P1OUT &= ~SI_DATA;
 			i = 0;
 			data = tx_buf[tx_buf_index];
 			char_state = CHARACTER;
@@ -316,11 +317,9 @@ void tx_rtty(void) {
 		case CHARACTER:
 			i++;
 			if (data & 0x01) {
-				si4060_stop_tx();
-				si4060_start_tx(1);
+				P1OUT |= SI_DATA;
 			} else {
-				si4060_stop_tx();
-				si4060_start_tx(0);
+				P1OUT &= ~SI_DATA;
 			}
 			data >>= 1;
 			if (i == 7) {
@@ -328,9 +327,7 @@ void tx_rtty(void) {
 			}
 			break;
 		case STOP1:
-			si4060_stop_tx();
-			si4060_start_tx(1);
-			//P1OUT |= SI_DATA;
+			P1OUT |= SI_DATA;
 			char_state = STOP2;
 			break;
 		case STOP2:
@@ -480,7 +477,7 @@ int main(void) {
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();
-	si4060_setup(MOD_TYPE_CW);
+	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
 
 	/* entering wait state */
@@ -492,6 +489,7 @@ int main(void) {
 	}
 	si4060_stop_tx();
 	/* modulation from now on will be RTTY */
+	si4060_setup(MOD_TYPE_2FSK);
 	/* activate power save mode as fix is stable */
 	gps_power_save(1);
 	seconds = TLM_INTERVAL + 1;
