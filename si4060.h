@@ -29,6 +29,8 @@ void si4060_nop(void);
 void si4060_start_tx(uint8_t channel);
 void si4060_stop_tx(void);
 void si4060_setup(uint8_t mod_type);
+void si4060_change_state(uint8_t state);
+void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val);
 uint8_t si4060_get_property_8(uint8_t group, uint8_t prop);
 uint16_t si4060_part_info(void);
 

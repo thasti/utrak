@@ -13,11 +13,15 @@ volatile uint8_t spi_data;
 
 
 inline void spi_select(void) {
+	__delay_cycles(300);
 	PJOUT &= ~CS;
+	__delay_cycles(300);
 }
 
 inline void spi_deselect(void) {
+	__delay_cycles(300);
 	PJOUT |= CS;
+	__delay_cycles(300);
 }
 
 inline uint8_t spi_write(uint8_t data) {
