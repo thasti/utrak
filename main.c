@@ -22,8 +22,10 @@
  * housekeeping variables
  */
 volatile uint16_t seconds = 0;		/* timekeeping via timer */
-volatile uint16_t overflows = 0;	/* ISR overflow counter */
-volatile uint16_t tick = 0;		/* flag for timer handling (ISR -> main) */
+volatile uint16_t sec_overflows = 0;	/* ISR overflow counter for second generation */
+volatile uint16_t rtty_tick = 0;	/* flag for rtty handling (ISR -> main) */
+volatile uint16_t rtty_overflows = 0;	/* ISR overflow counter for rtty baud rate */
+volatile uint16_t aprs_tick = 0;	/* flag for APRS handling (ISR -> main) */
 volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
 uint16_t sent_id = 0;			/* sentence id */
 
@@ -119,9 +121,9 @@ void hw_init(void) {
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
 
-	/* 5.370.000 (DCO) / 8 (DIV) * 0.01 (sec) = 6712.5 */
+	/* 5.370.000 (DCO) / 8 (DIV) / 70 (N) = 9.589 kHz */
 	TA0CCTL0 = CCIE;			/* TACCR0 interrupt enabled */
-	TA0CCR0 = 6712;
+	TA0CCR0 = N_MAT - 1;
 	TA0CTL = TASSEL_2 + MC_1;		/* SMCLK, UP mode */
 
 	/* Enable Interrupts */
@@ -235,10 +237,10 @@ uint8_t uart_process(void) {
 void tx_blips(uint8_t sats) {
 	static uint8_t count = 0;	/* keeps track of blip state */
 
-	if (!tick)
+	if (!rtty_tick)
 		return;
 
-	tick = 0;
+	rtty_tick = 0;
 	count++;
 	switch (count) {
 		case 1:
@@ -265,7 +267,7 @@ void tx_blips(uint8_t sats) {
 /*
  * tx_rtty
  *
- * transmits the TX buffer via RTTY at 50 baud (at 100Hz tick)
+ * transmits the TX buffer via RTTY at 50 baud (at 100Hz rtty_tick)
  * LSB first, in 7bit-ASCII format, 1 start bit, 2 stop bits
  *
  * the systick-flag is used for timing.
@@ -291,10 +293,10 @@ void tx_rtty(void) {
 		tx_buf_index = 0;
 	}
 
-	if (!tick)
+	if (!rtty_tick)
 		return;
 
-	tick = 0;
+	rtty_tick = 0;
 	wait = !wait;
 	if (wait)
 		return;
@@ -567,10 +569,15 @@ __interrupt void ADC10_ISR(void)
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
-	tick = 1;
-	overflows++;
-	if (overflows == 100) {
+	aprs_tick = 1;
+	rtty_overflows++;
+	if (rtty_overflows >= N100HZ) {
+		rtty_tick = 1;
+		rtty_overflows = 0;
+	}
+	sec_overflows++;
+	if (sec_overflows >= N1HZ) {
 		seconds++;
-		overflows = 0;
+		sec_overflows = 0;
 	}
 }
