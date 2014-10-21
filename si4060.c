@@ -156,7 +156,7 @@ void si4060_nop(void) {
  * prop:	the number (index) of the property
  * val:		the value to set
  */
-void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
+inline void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -177,7 +177,7 @@ void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
  *
  * returns:	the value of the property
  */
-uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
+inline uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
 	uint8_t temp = 0;
 	spi_select();
 	spi_write(CMD_GET_PROPERTY);
@@ -200,7 +200,7 @@ uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
  * prop:	the number (index) of the property
  * val:		the value to set
  */
-void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
+inline void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -221,7 +221,7 @@ void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
  * prop:	the number (index) of the property
  * val:		the value to set
  */
-void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
+inline void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -243,7 +243,7 @@ void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
  * prop:	the number (index) of the property
  * val:		the value to set
  */
-void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
+inline void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -332,6 +332,20 @@ void si4060_start_tx(uint8_t channel) {
  */
 void si4060_stop_tx(void) {
 	si4060_change_state(STATE_SLEEP);
+}
+
+/*
+ * si4060_set_offset
+ *
+ * sets the FSK offset inside the Si4060 PLL. As PLL FRAC- and INTE-registers can't be modified while
+ * transmitting, we must modify the MODEM_FREQ_DEV or MODEM_FREQ_OFFSET registers in transmission.
+ * as we won't need more deviation than 25kHz, we can use the OFFSET register and save one byte.
+ *
+ * offset: frequency offset from carrier frequency (PLL tuning resolution)
+ *
+ */
+inline void si4060_set_offset(uint16_t offset) {
+	si4060_set_property_16(PROP_MODEM, MODEM_FREQ_OFFSET, offset);
 }
 
 /*
