@@ -29,4 +29,14 @@ for i in range(n):
 			f.write('\n\t')
 		else:
 			f.write(' ')
-f.write('\n}')
+f.write('\n};')
+
+f.close()
+
+f = open('sin_table.h', 'w');
+f.write('#ifndef __sin_table_h__\n#define __sin_table_h__\n')
+f.write('\n#define SIN_OFF\t' + str(int(m/2)))
+f.write('\n#define SIN_MAX\t' + str(int(m)))
+f.write('\n\nuint16_t sin_table['+str(n)+'];');
+f.write('\n\n#endif')
+f.close
