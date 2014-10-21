@@ -79,7 +79,7 @@ void hw_init(void) {
 	CSCTL0_H = 0xA5;					/* write CS password */
 	CSCTL1 = 0;						/* set DCO to 5.37MHz */
 	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* DCO as ACLK, SMCLK, MCLK */
-	CSCTL3 = DIVA__8 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
+	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
