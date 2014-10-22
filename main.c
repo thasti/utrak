@@ -26,10 +26,11 @@ volatile uint16_t overflows = 0;	/* ISR overflow counter */
 volatile uint16_t tick = 0;		/* flag for timer handling (ISR -> main) */
 volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
 uint16_t sent_id = 0;			/* sentence id */
-volatile uint32_t frequency;		/* measured frequency (ISR -> main) */
-volatile uint16_t fc_ovf;		/* frequency counter ISR overflow counter */
-volatile uint16_t fc_tick;		/* flag for frequency handling */
-
+volatile uint32_t frequency = 0;		/* measured frequency (ISR -> main) */
+volatile uint16_t fc_ovf = 0;		/* frequency counter ISR overflow counter */
+volatile uint16_t fc_tick = 0;		/* flag for frequency handling */
+volatile uint16_t stx = 0;			/* uart byte to transmit (main -> ISR) */
+volatile uint16_t stx_len = 0;		/* length of uart byte (main -> ISR) */
 /*
  * the NMEA data buffer
  * it was confirmed that the Linx RXM-GPS-RM sticks to the standard
@@ -82,17 +83,16 @@ void hw_init(void) {
 	CSCTL0_H = 0xA5;					/* write CS password */
 	CSCTL1 = 0;						/* set DCO to 5.37MHz */
 	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* DCO as ACLK, SMCLK, MCLK */
-	CSCTL3 = DIVA__8 + DIVS__8 + DIVM__8;			/* divide all sources by 8 */
+	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__8;			/* divide SMCLK and MCLK by 8 */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
-	P1OUT &= ~(MISO + CLK_GPS + CLK_SI);
+	P1OUT &= ~(MISO + CLK_GPS + CLK_SI + UART);
 	P1REN |= MISO;
-	P1DIR = SI_SHDN + SI_DATA;					/* GPIOs for output */
-	P1SEL1 |= ADC_IN + MOSI + MISO + CLK_SI;			/* USCI_B MOSI, MISO */
-	P1SEL1 &= ~(SI_SHDN + SI_DATA + CLK_GPS);
-	P1SEL0 |= ADC_IN;
-	P1SEL0 &= ~(SI_SHDN + SI_DATA + MOSI + MISO + CLK_SI + CLK_GPS);	/* USCI_B MOSI, MISO */
+	P1DIR = SI_SHDN + SI_DATA + UART;					/* GPIOs for output */
+	P1SEL1 |= MOSI + MISO + CLK_SI;						/* USCI_B MOSI, MISO */
+	P1SEL1 &= ~(SI_SHDN + SI_DATA + CLK_GPS + UART);
+	P1SEL0 &= ~(SI_SHDN + SI_DATA + MOSI + MISO + CLK_SI + CLK_GPS + UART);	/* USCI_B MOSI, MISO */
 
 	/* GPIO init Port 2 */
 	P2DIR = TXD;				/* GPIOs for output */
@@ -122,16 +122,19 @@ void hw_init(void) {
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
 
-	/* 5.370.000 (DCO) / 8 (DIV) * 0.01 (sec) = 6712.5 */
 	TA0CCTL0 = CCIE;			/* TACCR0 interrupt enabled */
-	TA0CCR0 = 6712;
+	TA0CCR0 = (DCO_FREQ / 8 + RTTY_BAUDRATE/2) / RTTY_BAUDRATE;
 	TA0CTL = TASSEL_2 + MC_1;		/* SMCLK, UP mode */
 
 	/* external clock for Timer A1 */
-	TA1CTL = TASSEL__TACLK + MC__CONTINUOUS + TACLR + TAIE;
+	TA1CTL = TASSEL__TACLK + MC__CONTINUOUS + TACLR;
 
 	P1IES |= CLK_GPS;			/* interrupt on falling edge */
 	P1IE &= ~CLK_GPS;			/* deactivate interrupt on reset */
+
+	TB0CTL = TBSSEL__ACLK + ID__1 + MC__UP + TBCLR;
+	TB0CCR0 = (DCO_FREQ + UART_BAUDRATE/2) / UART_BAUDRATE;
+	TB0CCTL0 = 0;
 
 	/* Enable Interrupts */
 	__bis_SR_register(GIE);			/* set interrupt enable bit */
@@ -453,6 +456,7 @@ void init_tx_buffer(void) {
 int main(void) {
 	uint16_t fix_sats = 0;
 	uint16_t i;
+	char uart_buf[8] = {0};
 	/* set watchdog timer interval to 11 seconds */
 	/* reset occurs if Si4060 does not respond or software locks up */
 	/* divide SMCLK (5.370 MHz / 8) by by 2^23 in 32 bit timer */
@@ -485,7 +489,24 @@ int main(void) {
 	si4060_power_up();
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
-
+	P1IE |= CLK_GPS;	/* activate frequency counter */
+	TA1CTL |= TAIE;
+	TB0CCTL0 = CCIE;	/* enable debug UART */
+	while(1) {
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
+		if (fc_tick) {
+			fc_tick = 0;
+			i32toa(frequency, 8, &uart_buf);
+			for (i=0;i<8;i++) {
+				stx = ((uart_buf[i])<<1) + (1<<9);
+				stx_len = 10;
+				while(stx_len);
+			}
+			stx = (('\n')<<1) + (1<<9);
+			stx_len = 10;
+			while(stx_len);
+		}
+	}
 	/* entering wait state */
 	/* the tracker outputs RF blips while waiting for a GPS fix */
 	while (fix_sats < 5) {
@@ -499,7 +520,6 @@ int main(void) {
 	/* activate power save mode as fix is stable */
 	gps_power_save(1);
 	seconds = TLM_INTERVAL + 1;
-	P1IE |= CLK_GPS;			/* activate frequency counter */
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */
@@ -610,4 +630,27 @@ __interrupt void count_ovf (void)
 {
 	fc_ovf++;
 	TA1IV &= ~TA1IV_TAIFG;
+}
+
+/*
+ * Timer B0 ISR
+ *
+ * realises a software uart
+ *
+ * stx_len: length of uart transmission(10)
+ * stx: byte to transmit with start and stop bits
+ */
+#pragma vector = TIMER0_B0_VECTOR
+__interrupt void stx_isr (void)
+{
+	if (stx_len) {
+		if (stx & 1)
+			P1OUT |= UART;
+		else
+			P1OUT &= ~UART;
+		stx = stx>>1;
+		stx_len--;
+	} else {
+		P1OUT |= UART;
+	}
 }

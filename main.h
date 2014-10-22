@@ -62,7 +62,7 @@
 /* Port 1 */
 #define CLK_GPS	BIT0
 #define CLK_SI	BIT1
-#define ADC_IN	BIT2
+#define UART	BIT2
 #define SI_SHDN	BIT3
 #define SI_DATA	BIT4
 #define MOSI	BIT6
@@ -79,5 +79,9 @@
 /* ADC calibration locations */
 #define CALADC10_15V_30C  *((unsigned int *)0x1A1A)   // Temperature Sensor Calibration-30 C
 #define CALADC10_15V_85C  *((unsigned int *)0x1A1C)   // Temperature Sensor Calibration-85 C
+
+#define RTTY_BAUDRATE		100
+#define UART_BAUDRATE		19200
+#define DCO_FREQ			5377183UL
 
 #endif

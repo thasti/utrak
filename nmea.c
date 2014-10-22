@@ -60,7 +60,6 @@ uint8_t GPGGA_has_fix(volatile char *sentence) {
 						return 0;
 					else
 						return 1;
-					break;
 				default:
 					break;
 			}
