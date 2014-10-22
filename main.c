@@ -129,6 +129,23 @@ void hw_init(void) {
 	__bis_SR_register(GIE);			/* set interrupt enable bit */
 }
 
+/* serial_enable
+ *
+ * enable RX interrupt. must be disabled while FM transmission (breaks timing otherwise)
+ */
+inline void serial_enable(void) {
+	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
+}
+
+/* serial_disable
+ *
+ * disable RX interrupt.
+ */
+inline void serial_disable(void) {
+	UCA0IE &= ~UCRXIE;			/* disable RX interrupt */
+}
+
+
 /*
  * get_battery_voltage
  *
@@ -485,6 +502,8 @@ int main(void) {
 	uint16_t fcw = 128;
 	uint16_t pac = 0;
 	uint16_t offset = 0;
+
+	serial_disable();
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		if (aprs_tick) {
