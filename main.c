@@ -85,8 +85,7 @@ void hw_init(void) {
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
-	P1OUT &= ~(MISO + LED_A + LED_K);
-	P1REN |= MISO;
+	P1OUT &= ~(LED_A + LED_K);
 	P1DIR = SI_SHDN + SI_DATA + LED_A + LED_K;				/* GPIOs for output */
 	P1SEL1 |= ADC_IN + MOSI + MISO;					/* USCI_B MOSI, MISO */
 	P1SEL1 &= ~(SI_SHDN + SI_DATA);
@@ -119,7 +118,6 @@ void hw_init(void) {
 	UCB0BR0 = 0;				/* divide by /1 */
 	UCB0BR1 = 0;
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
-	UCB0IE |= UCRXIE;			/* Enable RX interrupt */
 
 	/* 5.370.000 (DCO) / 8 (DIV) / 70 (N) = 9.589 kHz */
 	TA0CCTL0 = CCIE;			/* TACCR0 interrupt enabled */

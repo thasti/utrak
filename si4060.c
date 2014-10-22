@@ -34,7 +34,7 @@ void si4060_shutdown(void) {
 void si4060_wakeup(void) {
 	P1OUT &= ~SI_SHDN;
 	/* wait 20ms */
-	__delay_cycles(20000);
+	__delay_cycles(200000);
 }
 
 /*
@@ -110,6 +110,7 @@ void si4060_power_up(void) {
 	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_POWER_UP);
+	__delay_cycles(10000);
 	spi_write(FUNC);
 	spi_write(0);			/* TCXO if used */
 	spi_write((uint8_t) (XO_FREQ >> 24));
@@ -157,6 +158,7 @@ void si4060_nop(void) {
  * val:		the value to set
  */
 inline void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -164,7 +166,6 @@ inline void si4060_set_property_8(uint8_t group, uint8_t prop, uint8_t val) {
 	spi_write(prop);
 	spi_write(val);
 	spi_deselect();
-	si4060_get_cts(0);
 }
 
 /*
@@ -201,6 +202,7 @@ inline uint8_t si4060_get_property_8(uint8_t group, uint8_t prop) {
  * val:		the value to set
  */
 inline void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -209,7 +211,27 @@ inline void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	si4060_get_cts(0);
+}
+
+/*
+ * si4060_set_property_16_nocts
+ *
+ * sets an 16 bit (2 byte) property in the Si4060
+ * does not check for CTS from the Si4060
+ *
+ * group:	the group number of the property
+ * prop:	the number (index) of the property
+ * val:		the value to set
+ */
+inline void si4060_set_property_16_nocts(uint8_t group, uint8_t prop, uint16_t val) {
+	spi_select();
+	spi_write(CMD_SET_PROPERTY);
+	spi_write(group);
+	spi_write(2);
+	spi_write(prop);
+	spi_write(val >> 8);
+	spi_write(val);
+	spi_deselect();
 }
 
 /*
@@ -222,6 +244,7 @@ inline void si4060_set_property_16(uint8_t group, uint8_t prop, uint16_t val) {
  * val:		the value to set
  */
 inline void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -231,7 +254,6 @@ inline void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	si4060_get_cts(0);
 }
 
 /*
@@ -244,6 +266,7 @@ inline void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val) {
  * val:		the value to set
  */
 inline void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_SET_PROPERTY);
 	spi_write(group);
@@ -254,7 +277,6 @@ inline void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
 	spi_write(val >> 8);
 	spi_write(val);
 	spi_deselect();
-	si4060_get_cts(0);
 }
 
 /*
@@ -267,6 +289,7 @@ inline void si4060_set_property_32(uint8_t group, uint8_t prop, uint32_t val) {
  * drvstrength:	the driver strength
  */
 void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gpio3, uint8_t drvstrength) {
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_GPIO_PIN_CFG);
 	spi_write(gpio0);
@@ -277,7 +300,6 @@ void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gp
 	spi_write(SDO_MODE_DONOTHING);
 	spi_write(drvstrength);
 	spi_deselect();
-	si4060_get_cts(0);
 }
 
 /*
@@ -293,6 +315,7 @@ void si4060_gpio_pin_cfg(uint8_t gpio0, uint8_t gpio1, uint8_t gpio2, uint8_t gp
 uint16_t si4060_part_info(void) {
 	uint16_t temp;
 
+	si4060_get_cts(0);
 	temp = 0;
 	spi_select();
 	spi_write(CMD_PART_INFO);
@@ -314,6 +337,7 @@ uint16_t si4060_part_info(void) {
  * channel:	the channel to start transmission on
  */
 void si4060_start_tx(uint8_t channel) {
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_START_TX);
 	spi_write(channel);
@@ -322,7 +346,6 @@ void si4060_start_tx(uint8_t channel) {
 	spi_write(0x00);
 	spi_write(0x00);
 	spi_deselect();
-	si4060_get_cts(0);
 }
 
 /*
@@ -345,7 +368,7 @@ void si4060_stop_tx(void) {
  *
  */
 inline void si4060_set_offset(uint16_t offset) {
-	si4060_set_property_16(PROP_MODEM, MODEM_FREQ_OFFSET, offset);
+	si4060_set_property_16_nocts(PROP_MODEM, MODEM_FREQ_OFFSET, offset);
 }
 
 /*
