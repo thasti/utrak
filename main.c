@@ -13,6 +13,7 @@
 #include "si4060.h"
 #include "spi.h"
 #include "string.h"
+#include "sin_table.h"
 
 /*
  * GLOBAL VARIABLES
@@ -477,6 +478,31 @@ int main(void) {
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();
+	/* APRS TEST CODE */
+	/* TODO REMOVE TODO */
+	si4060_setup(MOD_TYPE_2FSK);
+	si4060_start_tx(0);
+	uint16_t fcw = 128;
+	uint16_t pac = 0;
+	uint16_t offset = 0;
+	while(1) {
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
+		if (aprs_tick) {
+			aprs_tick = 0;
+			pac = (pac + fcw) & 1023;
+			if (pac > 767)
+				offset = SIN_MAX - sin_table[255 - (pac - 768)];
+			else if (pac > 511)
+				offset = SIN_MAX - sin_table[pac - 512];
+			else if (pac > 255)
+				offset = sin_table[255 - (pac - 256)];
+			else
+				offset = sin_table[pac];
+			si4060_set_offset(offset);
+		}
+	}
+	/* TODO REMOVE TODO */
+
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
 
