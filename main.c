@@ -78,9 +78,9 @@ char tlm_temp[TEMP_LENGTH+1] = { 0 };
  *
  */
 void hw_init(void) {
-	/* DCO init, SMCLK is 5.37MHz divided by 8 */
+	/* DCO init, SMCLK is 8MHz divided by 8 */
 	CSCTL0_H = 0xA5;					/* write CS password */
-	CSCTL1 = 0;						/* set DCO to 5.37MHz */
+	CSCTL1 = DCOFSEL_3;					/* set DCO to 5.37MHz */
 	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* DCO as ACLK, SMCLK, MCLK */
 	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__1;			/* divide all sources by 8 */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
@@ -105,9 +105,9 @@ void hw_init(void) {
 	/* USCI_A (GPS UART) init */
 	UCA0CTL1 = UCSWRST; 			/* reset USCI */
 	UCA0CTL1 |= UCSSEL_2;			/* SMCLK */
-	UCA0BR0 = 4;
+	UCA0BR0 = 6;
 	UCA0BR1 = 0;
-	UCA0MCTLW = (0xFD<<8)+(5<<4)+UCOS16;	/* set UCA0BRS */
+	UCA0MCTLW = (0xAA<<8)+(6<<4)+UCOS16;	/* set UCA0BRS */
 	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
 	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
 
@@ -120,7 +120,7 @@ void hw_init(void) {
 	UCB0BR1 = 0;
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 
-	/* 5.370.000 (DCO) / 8 (DIV) / 70 (N) = 9.589 kHz */
+	/* CCR0 is calculated by MATLAB script for minimum frequency error */
 	TA0CCTL0 = CCIE;			/* TACCR0 interrupt enabled */
 	TA0CCR0 = N_MAT - 1;
 	TA0CTL = TASSEL_2 + MC_1;		/* SMCLK, UP mode */
@@ -494,34 +494,68 @@ int main(void) {
 	gps_save_settings();
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
+	si4060_setup(MOD_TYPE_2FSK);
 	si4060_power_up();
 	/* APRS TEST CODE */
+	/*
+	seconds = 0;
+	while(1) {
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
+		if (seconds == 1) {
+			si4060_start_tx(0);
+		}
+		if (seconds > 1) {
+			si4060_stop_tx();
+		}
+	}
+	*/
 	/* TODO REMOVE TODO */
+#ifdef APRS_TEST
+	serial_disable();
 	si4060_setup(MOD_TYPE_2FSK);
 	si4060_start_tx(0);
-	uint16_t fcw = 128;
+	uint16_t fcw = 146;
 	uint16_t pac = 0;
 	uint16_t offset = 0;
 
-	serial_disable();
+	aprs_tick = 0;
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		if (aprs_tick) {
 			aprs_tick = 0;
 			pac = (pac + fcw) & 1023;
-			if (pac > 767)
-				offset = SIN_MAX - sin_table[255 - (pac - 768)];
-			else if (pac > 511)
-				offset = SIN_MAX - sin_table[pac - 512];
-			else if (pac > 255)
-				offset = sin_table[255 - (pac - 256)];
-			else
-				offset = sin_table[pac];
+			switch (pac & 0x0300) {
+				case 0x0000:
+					/* 0 <= pac < 256 */
+					offset = sin_table[pac];
+					break;
+				case 0x0100:
+					/* 256 <= pac < 512 */
+					offset = sin_table[255 - (pac & 0x00ff)];
+					break;
+				case 0x0200:
+					/* 512 <= pac < 768 */
+					offset = SIN_MAX - sin_table[pac & 0x00ff];
+					break;
+				case 0x0300:
+					/* 768 <= pac < 1024 */
+					offset = SIN_MAX - sin_table[255 - (pac & 0x00ff)];
+					break;
+				default:
+					break;
+			}
 			si4060_set_offset(offset);
+
+			/* tell us when we fail to meet the timing */
+			if (aprs_tick) {
+				while(1) {
+					WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
+				}
+			}
 		}
 	}
 	/* TODO REMOVE TODO */
-
+#endif
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
 
