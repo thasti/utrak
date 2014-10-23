@@ -225,7 +225,7 @@ int16_t get_die_temperature(void) {
  * 		n - the number of satellites in the last fix
  */
 uint8_t uart_process(void) {
-	static uint8_t i = 0;
+	uint8_t i = 0;
 	if (nmea_buf_rdy) {
 		nmea_buf_rdy = 0;
 		if (NMEA_sentence_is_GGA(nmea_buf)) {

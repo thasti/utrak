@@ -21,12 +21,12 @@
  * returns: 	1 if GPGGA,
  * 		0 if not GPGGA
  */
-uint8_t NMEA_sentence_is_GGA(volatile char *sentence) {
+inline uint8_t NMEA_sentence_is_GGA(volatile char *sentence) {
 	uint8_t i;
 	const char pattern[] = "$GPGGA";
 
 	/* match first 6 characters of NMEA sentence to pattern */
-	for (i = 0; i < 6; i++) {
+	for (i = 0; i < 7; i++) {
 		if (*(sentence + i) != pattern[i]) {
 			return 0;
 		}
@@ -45,7 +45,7 @@ uint8_t NMEA_sentence_is_GGA(volatile char *sentence) {
  * returns:	1 if fix is OK
  * 		0 if fix is not OK
  */
-uint8_t GPGGA_has_fix(volatile char *sentence) {
+inline uint8_t GPGGA_has_fix(volatile char *sentence) {
 	uint8_t field = 0;
 	uint8_t len = 0;
 	uint8_t i;
@@ -70,7 +70,7 @@ uint8_t GPGGA_has_fix(volatile char *sentence) {
 	return 0;
 }
 
-uint8_t GPGGA_get_data(	volatile char *sentence,
+inline uint8_t GPGGA_get_data(	volatile char *sentence,
 			volatile char *lat,
 			volatile char *lon,
 			volatile char *alt,
