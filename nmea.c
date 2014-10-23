@@ -75,12 +75,14 @@ inline uint8_t GPGGA_get_data(	volatile char *sentence,
 			volatile char *lon,
 			volatile char *alt,
 			uint8_t *alt_length,
+			volatile char *alt_ft,
 			volatile char *sat,
 			volatile char *time) {
 	uint8_t i, tmp;
 	uint8_t field = 0;
 	uint8_t len = 0;
 	uint16_t alt_i = 0;
+	uint32_t alt_ft_i = 0;
 
 	volatile char *lat_cpy = lat;
 	volatile char *lon_cpy = lon;
@@ -130,6 +132,8 @@ inline uint8_t GPGGA_get_data(	volatile char *sentence,
 				case ALT_FIELD:
 					atoi16(sentence + i - len + 1, len - 1, &alt_i);
 					*alt_length = i16toav(alt_i, alt);
+					alt_ft_i = (uint32_t) alt_i * 100 * 328 / 100;
+					i32toa(alt_ft_i, 6, alt_ft);
 					break;
 				default:
 					break;

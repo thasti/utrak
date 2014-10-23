@@ -48,6 +48,13 @@ uint16_t tx_buf_length = 0;			/* how many chars to send */
 char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the actual buffer */
 
 /*
+ * the APRS data buffer
+ * contains ASCII data
+ */
+uint16_t aprs_buf_len = APRS_BUF_LEN;
+char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx " APRS_COMMENT;
+
+/*
  * GPS fix data and data for tlm string
  * extracted from NMEA sentences by GPS data processing
  */
@@ -57,6 +64,7 @@ char tlm_lat[LAT_LENGTH+1] = { 0 };
 char tlm_lon[LON_LENGTH+1] = { 0 };
 uint8_t tlm_alt_length;
 char tlm_alt[ALT_LENGTH_MAX] = { 0 };
+char tlm_alt_ft[6] = { 0 };
 char tlm_sat[SAT_LENGTH] = { 0 };
 char tlm_volt[VOLT_LENGTH] = { 0 };
 char tlm_temp[TEMP_LENGTH+1] = { 0 };
@@ -75,7 +83,7 @@ uint8_t uart_process(void) {
 		nmea_buf_rdy = 0;
 		if (NMEA_sentence_is_GGA(nmea_buf)) {
 			if (GPGGA_has_fix(nmea_buf)) {
-				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, &tlm_alt_length, tlm_sat, tlm_time);
+				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, &tlm_alt_length, tlm_alt_ft, tlm_sat, tlm_time);
 				if (!i) {
 					return 0;
 				}
@@ -123,7 +131,13 @@ int main(void) {
 	si4060_setup(MOD_TYPE_2FSK);
 	si4060_power_up();
 	/* APRS TEST CODE */
-	tx_aprs();
+	while(1) {
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
+		if (seconds > 5) {
+			tx_aprs();
+			seconds = 0;
+		}
+	}
 
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
