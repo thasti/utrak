@@ -198,7 +198,7 @@ void gps_enable_timepulse(void) {
 		(uint8_t) (TP_LEN >> 24),
 		0x00, 0x00, 0x00, 0x00,			/* same setting if lock is acquired */
 		0x00, 0x00, 0x00, 0x00,			/* no user delay */
-		0b00110011, 0x00, 0x00, 0x00,		/* enable TP, lock to GNSS, setting is length */
+		0b00010001, 0x00, 0x00, 0x00,		/* enable TP, lock to GNSS, setting is length */
 		0x00, 0x00				/* placeholder for checksum */
 	};
 
