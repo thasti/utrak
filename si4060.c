@@ -72,7 +72,7 @@ uint8_t si4060_get_cts(uint8_t read_response) {
 void si4060_shutdown(void) {
 	P1OUT |= SI_SHDN;
 	/* wait 10us */
-	__delay_cycles(5000);
+	__delay_cycles(50000);
 }
 
 /*
@@ -84,7 +84,7 @@ void si4060_shutdown(void) {
 void si4060_wakeup(void) {
 	P1OUT &= ~SI_SHDN;
 	/* wait 20ms */
-	__delay_cycles(30000);
+	__delay_cycles(50000);
 	si4060_get_cts(0);
 }
 
