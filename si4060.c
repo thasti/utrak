@@ -13,39 +13,6 @@
 #include "si4060.h"
 #include "main.h"	/* for GPIO constants */
 
-/*
- * si4060_shutdown
- *
- * makes the Si4060 go to shutdown state.
- * all register content is lost.
- */
-void si4060_shutdown(void) {
-	P1OUT |= SI_SHDN;
-	/* wait 10us */
-	__delay_cycles(2000);
-}
-
-/*
- * si4060_wakeup
- *
- * wakes up the Si4060 from shutdown state.
- * si4060_power_up and si4060_setup have to be called afterwards
- */
-void si4060_wakeup(void) {
-	P1OUT &= ~SI_SHDN;
-	/* wait 20ms */
-	__delay_cycles(20000);
-}
-
-/*
- * si4060_reset
- *
- * cleanly does the POR as specified in datasheet
- */
-void si4060_reset(void) {
-	si4060_shutdown();
-	si4060_wakeup();
-}
 
 /*
  * si4060_read_cmd_buf
@@ -95,6 +62,41 @@ uint8_t si4060_get_cts(uint8_t read_response) {
 	}
 	return 0;
 
+}
+
+/*
+ * si4060_shutdown
+ *
+ * makes the Si4060 go to shutdown state.
+ * all register content is lost.
+ */
+void si4060_shutdown(void) {
+	P1OUT |= SI_SHDN;
+	/* wait 10us */
+	__delay_cycles(2000);
+}
+
+/*
+ * si4060_wakeup
+ *
+ * wakes up the Si4060 from shutdown state.
+ * si4060_power_up and si4060_setup have to be called afterwards
+ */
+void si4060_wakeup(void) {
+	P1OUT &= ~SI_SHDN;
+	/* wait 20ms */
+	__delay_cycles(20000);
+	si4060_get_cts(0);
+}
+
+/*
+ * si4060_reset
+ *
+ * cleanly does the POR as specified in datasheet
+ */
+void si4060_reset(void) {
+	si4060_shutdown();
+	si4060_wakeup();
 }
 
 /*
