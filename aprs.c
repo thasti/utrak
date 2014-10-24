@@ -1,16 +1,19 @@
+#ifndef TEST
 #include <msp430.h>
-#include <inttypes.h>
-#include "aprs.h"
-#include "main.h"
 #include "hw.h"
 #include "si4060.h"
 #include "sin_table.h"
+#include "main.h"
+#endif
+
+#include <inttypes.h>
+#include "aprs.h"
 
 extern volatile uint16_t aprs_tick;
 extern uint16_t aprs_buf_len;
 extern char aprs_buf[APRS_BUF_LEN];
 
-const char aprs_header[APRS_HEADER_LEN] = {
+const unsigned char aprs_header[APRS_HEADER_LEN] = {
 	'A'*2, 'P'*2, 'R'*2, 'S'*2, ' '*2, ' '*2, SSID_RESC + DST_SSID,
 	'D'*2, 'K'*2, '3'*2, 'S'*2, 'B'*2, ' '*2, SSID_RESC + SRC_SSID,
 	'W'*2, 'I'*2, 'D'*2, 'E'*2, '1'*2, ' '*2, SSID_RESC + WIDE_SSID,
@@ -22,8 +25,9 @@ volatile uint16_t fcs = 0;
 volatile uint8_t bitcnt = 8;
 volatile uint8_t onecnt = 0;
 volatile uint8_t finished = 0;
+volatile uint8_t stuffing = 0;
 
-
+#ifndef TEST
 inline void calculate_fcs(void) {
 	int i;
 	CRCINIRES = 0xffff;
@@ -36,12 +40,16 @@ inline void calculate_fcs(void) {
 	}
 	fcs = CRCRESR ^ 0xffff;
 }
+#else
+void calculate_fcs(void) {}
+#endif
 
 inline void aprs_init(void) {
 	aprs_state = SM_INIT;
 	finished = 0;
 	bitcnt = 8;
 	onecnt = 0;
+	stuffing = 0;
 	/* copy LAT + dir */
 	/* copy LON + dir */
 	/* copy ALT_FT */
@@ -64,6 +72,7 @@ uint8_t get_next_byte(void) {
 	uint8_t retval;
 	switch (aprs_state) {
 		case SM_INIT:
+			stuffing = 0;
 			aprs_state = SFLAG;
 			i = 0;
 		case SFLAG:
@@ -74,6 +83,7 @@ uint8_t get_next_byte(void) {
 			}
 			break;
 		case AX25_HEADER:
+			stuffing = 1;
 			retval = aprs_header[i];
 			if (++i >= APRS_HEADER_LEN) {
 				aprs_state = AX25_DATA;
@@ -88,14 +98,15 @@ uint8_t get_next_byte(void) {
 			}
 			break;
 		case AX25_FCS1:
-			retval = (uint8_t)(fcs >> 8);
+			retval = (uint8_t)fcs;
 			aprs_state = AX25_FCS2;
 			break;
 		case AX25_FCS2:
+			retval = (uint8_t)(fcs >> 8);
 			aprs_state = EFLAG;
-			retval = (uint8_t)fcs;
 			break;
 		case EFLAG:
+			stuffing = 0;
 			retval = AX25_FLAG;
 			if (++i > AX25_EFLAGS) {
 				finished = 1;
@@ -118,7 +129,7 @@ uint8_t get_next_byte(void) {
 uint8_t get_next_bit(void) {
 	static uint8_t byte = 0;
 	static uint8_t bit = 0;
-	static uint8_t bit_d = 1;
+	static uint8_t bit_d = 0;
 	if (bitcnt >= 8) {
 		byte = get_next_byte();
 		bitcnt = 0;
@@ -128,9 +139,9 @@ uint8_t get_next_bit(void) {
 	if (bit) {
 		/* bit stuffing */
 		onecnt++;
-		if (aprs_state != SFLAG && aprs_state != EFLAG && (onecnt >= 5)) {
+		if ((stuffing == 1) && (onecnt >= 5)) {
 			/* next time the same bit will be a zero -> stuffed bit */
-			byte &= ~BIT0;
+			byte &= ~0x01;
 			onecnt = 0;
 		} else {
 			byte >>= 1;
@@ -151,6 +162,7 @@ uint8_t get_next_bit(void) {
 	return bit_d;
 }
 
+#ifndef TEST
 void tx_aprs(void) {
 	uint16_t fcw = SPACE_FCW;
 	uint16_t pac = 0;
@@ -165,11 +177,11 @@ void tx_aprs(void) {
 	si4060_start_tx(0);
 
 	aprs_tick = 0;
-	while(!finished) {
+	do {
 		if (aprs_tick) {
 			/* running with APRS sample clock */
 			aprs_tick = 0;
-			if (++samp_cnt >= SAMP_PER_BIT) {
+			if (++samp_cnt >= 7) {
 				/* running with bit clock (1200 / sec) */
 				WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 				samp_cnt = 0;
@@ -179,7 +191,8 @@ void tx_aprs(void) {
 					fcw = MARK_FCW;
 				}
 			}
-
+#define APRS_FM
+#ifdef APRS_FM
 			/* NCO core */
 			pac = (pac + fcw) & 1023;
 			switch (pac & 0x0300) {
@@ -203,6 +216,13 @@ void tx_aprs(void) {
 					break;
 			}
 			si4060_set_offset(offset);
+#else
+			if (fcw == MARK_FCW) {
+				si4060_set_offset(0);
+			} else {
+				si4060_set_offset(70);
+			}
+#endif
 
 			/* tell us when we fail to meet the timing */
 			if (aprs_tick) {
@@ -211,10 +231,10 @@ void tx_aprs(void) {
 				}
 			}
 		}
-	}
+	} while(!finished);
 	si4060_set_offset(0);
 	si4060_stop_tx();
 	serial_enable();
-
-
 }
+
+#endif

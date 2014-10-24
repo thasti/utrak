@@ -1,12 +1,17 @@
 #ifndef __aprs_h__
 #define __aprs_h__
 
+#ifndef TEST
 void tx_aprs(void);
+#else
+uint8_t get_next_bit(void);
+void aprs_init(void);
+#endif
 
 /* APRS destination SSID is 0 */
 #define DST_SSID	0
 /* APRS source SSID */
-#define SRC_SSID	11
+#define SRC_SSID	8
 /* WIDE1-x SSID */
 #define WIDE_SSID	3
 
@@ -36,7 +41,7 @@ void tx_aprs(void);
 #define APRS_ALT_START	22
 
 #define AX25_SFLAGS	50
-#define AX25_EFLAGS	10
+#define AX25_EFLAGS	1
 
 #define AX25_FLAG	0b01111110
 
