@@ -1,0 +1,6 @@
+SRC_ALL=../aprs.c
+TEST_BIN=aprs-logic
+
+test-pc:
+	$(CC) -DTEST -o$(TEST_BIN) $(SRC_ALL) $(TEST_BIN).c
+
