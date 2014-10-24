@@ -28,13 +28,13 @@ inline void calculate_fcs(void) {
 	int i;
 	CRCINIRES = 0xffff;
 	for (i = 0; i < APRS_HEADER_LEN; i++) {
-		CRCDIRB_L = aprs_header[i];
+		CRCDI_L = aprs_header[i];
 	}
 
 	for (i = 0; i < APRS_BUF_LEN; i++) {
-		CRCDIRB_L = aprs_buf[i];
+		CRCDI_L = aprs_buf[i];
 	}
-	fcs = CRCINIRES;
+	fcs = CRCRESR ^ 0xffff;
 }
 
 inline void aprs_init(void) {
@@ -116,9 +116,9 @@ uint8_t get_next_byte(void) {
  * returns: the next bit to be transmitted, already NRZI coded and bit stuffed
  */
 uint8_t get_next_bit(void) {
-	static uint8_t byte;
-	static uint8_t bit;
-	static uint8_t bit_d;
+	static uint8_t byte = 0;
+	static uint8_t bit = 0;
+	static uint8_t bit_d = 1;
 	if (bitcnt >= 8) {
 		byte = get_next_byte();
 		bitcnt = 0;
@@ -134,7 +134,7 @@ uint8_t get_next_bit(void) {
 			onecnt = 0;
 		} else {
 			byte >>= 1;
-			bitcnt = (bitcnt + 1) & 0x07;
+			bitcnt = bitcnt + 1;
 		}
 
 	} else {
@@ -143,17 +143,12 @@ uint8_t get_next_bit(void) {
 		byte >>= 1;
 		bitcnt = bitcnt + 1;
 	}
-	if (bit_d == bit) {
-		/* no transition */
-		/* save current bit */
-		bit_d = bit;
-		return 1;
-	} else {
-		/* transition */
-		/* save current bit */
-		bit_d = bit;
-		return 0;
+
+	/* NRZI encoding */
+	if (bit == 0) {
+		bit_d ^= 0x01;
 	}
+	return bit_d;
 }
 
 void tx_aprs(void) {
@@ -174,8 +169,7 @@ void tx_aprs(void) {
 		if (aprs_tick) {
 			/* running with APRS sample clock */
 			aprs_tick = 0;
-			samp_cnt++;
-			if (samp_cnt >= SAMP_PER_BIT) {
+			if (++samp_cnt >= SAMP_PER_BIT) {
 				/* running with bit clock (1200 / sec) */
 				WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 				samp_cnt = 0;
