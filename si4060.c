@@ -129,11 +129,11 @@ void si4060_power_up(void) {
  * changes the internal state machine state of the Si4060
  */
 void si4060_change_state(uint8_t state) {
+	si4060_get_cts(0);
 	spi_select();
 	spi_write(CMD_CHANGE_STATE);
 	spi_write(state);
 	spi_deselect();
-	si4060_get_cts(0);
 
 }
 

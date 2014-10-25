@@ -132,7 +132,7 @@ inline uint8_t GPGGA_get_data(	volatile char *sentence,
 				case ALT_FIELD:
 					atoi16(sentence + i - len + 1, len - 1, &alt_i);
 					*alt_length = i16toav(alt_i, alt);
-					alt_ft_i = (uint32_t) alt_i * 100 * 328 / 100;
+					alt_ft_i = (uint32_t) alt_i * 328 / 100;
 					i32toa(alt_ft_i, 6, alt_ft);
 					break;
 				default:

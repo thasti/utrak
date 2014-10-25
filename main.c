@@ -64,7 +64,7 @@ char tlm_lat[LAT_LENGTH+1] = { 0 };
 char tlm_lon[LON_LENGTH+1] = { 0 };
 uint8_t tlm_alt_length;
 char tlm_alt[ALT_LENGTH_MAX] = { 0 };
-char tlm_alt_ft[6] = { 0 };
+char tlm_alt_ft[APRS_ALT_LEN] = { 0 };
 char tlm_sat[SAT_LENGTH] = { 0 };
 char tlm_volt[VOLT_LENGTH] = { 0 };
 char tlm_temp[TEMP_LENGTH+1] = { 0 };
@@ -135,7 +135,6 @@ int main(void) {
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		if (seconds > 5) {
-			tx_aprs();
 			seconds = 0;
 		}
 	}
@@ -166,6 +165,7 @@ int main(void) {
 		if ((!tx_buf_rdy) && (seconds > TLM_INTERVAL)) {
 			seconds = 0;
 			prepare_tx_buffer();
+			tx_aprs();
 		}
 		tx_rtty();
 	}

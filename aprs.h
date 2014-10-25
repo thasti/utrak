@@ -38,8 +38,11 @@ void aprs_init(void);
 #define APRS_COMMENT	"uTrak " PAYLOAD_NAME
 #define APRS_BUF_LEN	1 + 8 + 1 + 9 + 4 + 6 + 1 + sizeof(APRS_COMMENT) - 1
 #define APRS_LAT_START	1
+#define APRS_LAT_LEN	7
 #define APRS_LON_START	10
-#define APRS_ALT_START	22
+#define APRS_LON_LEN	8
+#define APRS_ALT_START	23
+#define APRS_ALT_LEN	6
 
 #define AX25_SFLAGS	50
 #define AX25_EFLAGS	1

@@ -32,6 +32,7 @@ inline void si4060_set_offset(uint16_t offset);
 void si4060_setup(uint8_t mod_type);
 void si4060_change_state(uint8_t state);
 uint16_t si4060_part_info(void);
+uint8_t si4060_get_cts(uint8_t read_response);
 
 /* ===== command definitions ===== */
 #define CMD_NOP			0x00

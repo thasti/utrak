@@ -12,6 +12,9 @@
 extern volatile uint16_t aprs_tick;
 extern uint16_t aprs_buf_len;
 extern char aprs_buf[APRS_BUF_LEN];
+extern char tlm_lat[];
+extern char tlm_lon[];
+extern char tlm_alt_ft[];
 
 const unsigned char aprs_header[APRS_HEADER_LEN] = {
 	'A'*2, 'P'*2, 'R'*2, 'S'*2, ' '*2, ' '*2, SSID_RESC + (DST_SSID << 1),
@@ -45,14 +48,28 @@ void calculate_fcs(void) {}
 #endif
 
 inline void aprs_init(void) {
+	uint8_t i;
 	aprs_state = SM_INIT;
 	finished = 0;
 	bitcnt = 8;
 	onecnt = 0;
 	stuffing = 0;
-	/* copy LAT + dir */
-	/* copy LON + dir */
-	/* copy ALT_FT */
+	for (i = 0; i < APRS_LAT_LEN; i++)
+		aprs_buf[APRS_LAT_START + i] = tlm_lat[i+1];
+	for (i = 0; i < APRS_LON_LEN; i++)
+		aprs_buf[APRS_LON_START + i] = tlm_lon[i+1];
+	for (i = 0; i < APRS_ALT_LEN; i++)
+		aprs_buf[APRS_ALT_START + i] = tlm_alt_ft[i];
+	if (tlm_lat[0] == '+') {
+		aprs_buf[APRS_LAT_START + APRS_LAT_LEN] = 'N';
+	} else {
+		aprs_buf[APRS_LAT_START + APRS_LAT_LEN] = 'S';
+	}
+	if (tlm_lon[0] == '+') {
+		aprs_buf[APRS_LON_START + APRS_LON_LEN] = 'E';
+	} else {
+		aprs_buf[APRS_LON_START + APRS_LON_LEN] = 'W';
+	}
 	calculate_fcs();
 }
 
@@ -232,7 +249,9 @@ void tx_aprs(void) {
 			}
 		}
 	} while(!finished);
-	si4060_set_offset(0);
+	si4060_get_cts(0);
+	si4060_set_offset(SIN_OFF);
+	si4060_get_cts(0);
 	si4060_stop_tx();
 	serial_enable();
 }
