@@ -13,7 +13,7 @@ void aprs_init(void);
 /* APRS source SSID */
 #define SRC_SSID	8
 /* WIDE1-x SSID */
-#define WIDE_SSID	3
+#define WIDE_SSID	1
 
 /* data from matlab script */
 #define MARK_FCW	146
@@ -33,6 +33,7 @@ void aprs_init(void);
 #define PID_NONE	0xf0
 #define CONTROL_UI	0x03
 #define SSID_RESC	0x60
+#define HEADER_END	0x01
 
 #define APRS_COMMENT	"uTrak " PAYLOAD_NAME
 #define APRS_BUF_LEN	1 + 8 + 1 + 9 + 4 + 6 + 1 + sizeof(APRS_COMMENT) - 1
