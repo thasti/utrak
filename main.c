@@ -98,8 +98,9 @@ uint8_t uart_process(void) {
 int main(void) {
 	uint16_t fix_sats = 0;
 	uint16_t i;
-	/* set watchdog timer interval to some seconds */
+	/* set watchdog timer interval to 11 seconds */
 	/* reset occurs if Si4060 does not respond or software locks up */
+	/* divide SMCLK (5.370 MHz / 8) by by 2^23 in 32 bit timer */
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* init all hardware components */
 	hw_init();
@@ -139,7 +140,6 @@ int main(void) {
 		}
 	}
 	*/
-
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
 

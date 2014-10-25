@@ -45,13 +45,13 @@ void hw_init(void) {
 	PJDIR = CS;
 
 	/* USCI_A (GPS UART) init */
-	UCA0CTLW0 = UCSWRST; 			/* reset USCI */
-	UCA0CTLW0 |= UCSSEL__SMCLK;		/* SMCLK */
+	UCA0CTL1 = UCSWRST; 			/* reset USCI */
+	UCA0CTL1 |= UCSSEL_2;			/* SMCLK */
 	UCA0BR0 = 6;
 	UCA0BR1 = 0;
 	UCA0MCTLW = (0x11<<8)+(8<<4)+UCOS16;	/* set UCA0BRS */
+	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
 	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
-	UCA0CTLW0 &= ~UCSWRST;			/* release from reset */
 
 	/* USCI_B (Si4060 SPI) init */
 	UCB0CTLW0 = UCSWRST;			/* Put state machine in reset */
