@@ -26,7 +26,7 @@ inline uint8_t NMEA_sentence_is_GGA(volatile char *sentence) {
 	const char pattern[] = "$GPGGA";
 
 	/* match first 6 characters of NMEA sentence to pattern */
-	for (i = 0; i < 7; i++) {
+	for (i = 0; i < 6; i++) {
 		if (*(sentence + i) != pattern[i]) {
 			return 0;
 		}
