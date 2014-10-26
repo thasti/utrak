@@ -25,9 +25,7 @@
  * housekeeping variables
  */
 volatile uint16_t seconds = 0;		/* timekeeping via timer */
-volatile uint16_t sec_overflows = 0;	/* ISR overflow counter for second generation */
 volatile uint16_t rtty_tick = 0;	/* flag for rtty handling (ISR -> main) */
-volatile uint16_t rtty_overflows = 0;	/* ISR overflow counter for rtty baud rate */
 volatile uint16_t aprs_tick = 0;	/* flag for APRS handling (ISR -> main) */
 
 /*
@@ -100,7 +98,6 @@ int main(void) {
 	uint16_t i;
 	/* set watchdog timer interval to 11 seconds */
 	/* reset occurs if Si4060 does not respond or software locks up */
-	/* divide SMCLK (5.370 MHz / 8) by by 2^23 in 32 bit timer */
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* init all hardware components */
 	hw_init();
@@ -122,23 +119,12 @@ int main(void) {
 	gps_set_gps_only();
 	gps_set_gga_only();
 	gps_set_airborne_model();
-	//gps_enable_timepulse();
 	gps_set_power_save();
 	gps_power_save(0);
 	gps_save_settings();
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
-	si4060_setup(MOD_TYPE_2FSK);
 	si4060_power_up();
-	/* APRS TEST CODE */
-	/*
-	while(1) {
-		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
-		if (seconds > 5) {
-			seconds = 0;
-		}
-	}
-	*/
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_start_tx(0);
 
@@ -206,6 +192,9 @@ __interrupt void USCI_A0_ISR(void)
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
+	static uint16_t sec_overflows = 0;	/* overflow counter for second generation */
+	static uint16_t rtty_overflows = 0;	/* overflow counter for rtty baud rate */
+
 	aprs_tick = 1;
 	rtty_overflows++;
 	if (rtty_overflows >= N100HZ) {
