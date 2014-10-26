@@ -28,11 +28,11 @@ void si4060_power_up(void);
 void si4060_nop(void);
 void si4060_start_tx(uint8_t channel);
 void si4060_stop_tx(void);
+inline void si4060_set_offset(uint16_t offset);
 void si4060_setup(uint8_t mod_type);
 void si4060_change_state(uint8_t state);
-void si4060_set_property_24(uint8_t group, uint8_t prop, uint32_t val);
-uint8_t si4060_get_property_8(uint8_t group, uint8_t prop);
 uint16_t si4060_part_info(void);
+uint8_t si4060_get_cts(uint8_t read_response);
 
 /* ===== command definitions ===== */
 #define CMD_NOP			0x00

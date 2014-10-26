@@ -72,6 +72,16 @@
 /* Port J */
 #define CS	BIT0
 
+/* Clock defitions */
+#define FOSC	8000000UL				/* DCO frequency */
+#define PRESC	8					/* SMCLK prescaler */
+#define N_MAT	119					/* from MATLAB script */
+
+#define FT	FOSC / PRESC / N_MAT
+#define N100HZ	FT / 100
+#define N1HZ	FT
+
+
 /* ADC calibration locations */
 #define CALADC10_15V_30C  *((unsigned int *)0x1A1A)   // Temperature Sensor Calibration-30 C
 #define CALADC10_15V_85C  *((unsigned int *)0x1A1C)   // Temperature Sensor Calibration-85 C

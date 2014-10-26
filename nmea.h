@@ -10,6 +10,7 @@ uint8_t GPGGA_get_data(	volatile char *sentence,
 			volatile char *lon,
 			volatile char *alt,
 			uint8_t *alt_length,
+			volatile char *alt_ft,
 			volatile char *sat,
 			volatile char *time);
 
