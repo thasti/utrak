@@ -12,6 +12,7 @@
 #include "spi.h"
 #include "si4060.h"
 #include "main.h"	/* for GPIO constants */
+#include "sin_table.h"
 
 /*
  * si4060_read_cmd_buf
@@ -385,7 +386,6 @@ inline void si4060_set_offset(uint16_t offset) {
  * mod_type:	the type of modulation to use, use the MODEM_MOD_TYPE values (MOD_TYPE_*)
  */
 void si4060_setup(uint8_t mod_type) {
-
 	/* set high performance mode */
 	si4060_set_property_8(PROP_GLOBAL,
 			GLOBAL_CONFIG,
@@ -417,29 +417,50 @@ void si4060_setup(uint8_t mod_type) {
 	si4060_set_property_24(PROP_MODEM,
 			MODEM_FREQ_DEV,
 			(uint32_t)FDEV);
-	/* setup frequency deviation offset */
-	si4060_set_property_16(PROP_MODEM,
-			MODEM_FREQ_OFFSET,
-			0x0000);
-	/* setup divider to 8 (for 70cm ISM band) */
-	si4060_set_property_8(PROP_MODEM,
-			MODEM_CLKGEN_BAND,
-			SY_SEL_1 | FVCO_DIV_8);
 	/* set up the PA duty cycle */
 	si4060_set_property_8(PROP_PA,
 			PA_BIAS_CLKDUTY,
 			PA_BIAS_CLKDUTY_SIN_25);
-	/* set up the integer divider */
-	si4060_set_property_8(PROP_FREQ_CONTROL,
-			FREQ_CONTROL_INTE,
-			(uint8_t)(FDIV_INTE));
-	/* set up the fractional divider */
-	si4060_set_property_24(PROP_FREQ_CONTROL,
-			FREQ_CONTROL_FRAC,
-			(uint32_t)(FDIV_FRAC));
 	/* set the channel step size */
 	si4060_set_property_16(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_CHANNEL_STEP_SIZE,
 			(uint16_t)(2*FDEV));
+}
 
+void si4060_freq_2m(void) {
+	/* setup divider to 8 (for 70cm ISM band) */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_CLKGEN_BAND,
+			SY_SEL_1 | FVCO_DIV_24);
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_2M));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_2M));
+	/* setup frequency deviation offset */
+	si4060_set_property_16(PROP_MODEM,
+			MODEM_FREQ_OFFSET,
+			SIN_OFF_2M);
+}
+
+void si4060_freq_70cm(void) {
+	/* setup divider to 8 (for 70cm ISM band) */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_CLKGEN_BAND,
+			SY_SEL_1 | FVCO_DIV_8);
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_70CM));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_70CM));
+	/* setup frequency deviation offset */
+	si4060_set_property_16(PROP_MODEM,
+			MODEM_FREQ_OFFSET,
+			SIN_OFF_70CM);
 }

@@ -126,6 +126,7 @@ int main(void) {
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_power_up();
 	si4060_setup(MOD_TYPE_OOK);
+	si4060_freq_70cm();
 	si4060_start_tx(0);
 
 	/* entering wait state */
@@ -151,7 +152,8 @@ int main(void) {
 		if ((!tx_buf_rdy) && (seconds > TLM_INTERVAL)) {
 			seconds = 0;
 			prepare_tx_buffer();
-			tx_aprs();
+			tx_aprs(APRS_BAND_2M);
+			tx_aprs(APRS_BAND_70CM);
 		}
 		tx_rtty();
 	}

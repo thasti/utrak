@@ -6,7 +6,8 @@ import math
 import sys
 
 if len(sys.argv) != 3:
-	print "usage: " + sys.argv[0] + " array_length max_value"
+	print "usage: " + sys.argv[0] + " array_length max_value\n"
+	print "calculation of max_value: 2*deviation / (fxtal / 2^19 * (PRESC / 2))"
 	sys.exit()
 
 n = int(sys.argv[1])

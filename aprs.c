@@ -29,6 +29,9 @@ volatile uint8_t bitcnt = 8;
 volatile uint8_t onecnt = 0;
 volatile uint8_t finished = 0;
 volatile uint8_t stuffing = 0;
+volatile uint16_t sin_offset = 0;
+volatile uint16_t sin_max = 0;
+uint16_t const *sin_table;
 
 #ifndef TEST
 inline void calculate_fcs(void) {
@@ -180,11 +183,26 @@ uint8_t get_next_bit(void) {
 }
 
 #ifndef TEST
-void tx_aprs(void) {
+void tx_aprs(uint8_t band) {
 	uint16_t fcw = SPACE_FCW;
 	uint16_t pac = 0;
 	uint16_t offset = 0;
 	uint8_t samp_cnt = 0;
+
+	switch (band) {
+		case APRS_BAND_2M:
+			sin_offset = SIN_OFF_2M;
+			sin_max = SIN_MAX_2M;
+			sin_table = sin_table_2m;
+			si4060_freq_2m();
+			break;
+		case APRS_BAND_70CM:
+			sin_offset = SIN_OFF_70CM;
+			sin_max = SIN_MAX_70CM;
+			sin_table = sin_table_70cm;
+			si4060_freq_70cm();
+			break;
+	}
 
 	aprs_init();
 	serial_disable();
@@ -223,11 +241,11 @@ void tx_aprs(void) {
 					break;
 				case 0x0200:
 					/* 512 <= pac < 768 */
-					offset = SIN_MAX - sin_table[pac & 0x00ff];
+					offset = sin_max - sin_table[pac & 0x00ff];
 					break;
 				case 0x0300:
 					/* 768 <= pac < 1024 */
-					offset = SIN_MAX - sin_table[255 - (pac & 0x00ff)];
+					offset = sin_max - sin_table[255 - (pac & 0x00ff)];
 					break;
 				default:
 					break;
@@ -250,7 +268,7 @@ void tx_aprs(void) {
 		}
 	} while(!finished);
 	si4060_get_cts(0);
-	si4060_set_offset(SIN_OFF);
+	si4060_set_offset(sin_offset);
 	si4060_get_cts(0);
 	si4060_stop_tx();
 	serial_enable();
