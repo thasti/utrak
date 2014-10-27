@@ -113,7 +113,11 @@ void si4060_power_up(void) {
 	spi_write(CMD_POWER_UP);
 	__delay_cycles(10000);
 	spi_write(FUNC);
+#ifdef USE_TCXO
+	spi_write(TCXO);
+#else
 	spi_write(0);			/* TCXO if used */
+#endif
 	spi_write((uint8_t) (XO_FREQ >> 24));
 	spi_write((uint8_t) (XO_FREQ >> 16));
 	spi_write((uint8_t) (XO_FREQ >> 8));
@@ -386,11 +390,11 @@ void si4060_setup(uint8_t mod_type) {
 	si4060_set_property_8(PROP_GLOBAL,
 			GLOBAL_CONFIG,
 			GLOBAL_RESERVED | POWER_MODE_HIGH_PERF | SEQUENCER_MODE_FAST);
-	/*
+#ifdef	USE_TCXO
 	si4060_set_property_8(PROP_GLOBAL,
 			GLOBAL_XO_TUNE,
 			0x00);
-	*/
+#endif
 	/* set up GPIOs */
 	si4060_gpio_pin_cfg(GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
@@ -417,7 +421,7 @@ void si4060_setup(uint8_t mod_type) {
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
 			0x0000);
-	/* setup divider to 8 (for 70cm ISM band */
+	/* setup divider to 8 (for 70cm ISM band) */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
 			SY_SEL_1 | FVCO_DIV_8);
