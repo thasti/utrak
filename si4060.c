@@ -428,7 +428,7 @@ void si4060_setup(uint8_t mod_type) {
 }
 
 void si4060_freq_2m(void) {
-	/* setup divider to 8 (for 70cm ISM band) */
+	/* setup divider to 24 (for 2m amateur radio band) */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
 			SY_SEL_1 | FVCO_DIV_24);

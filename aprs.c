@@ -210,6 +210,8 @@ void tx_aprs(uint8_t band) {
 	/* use 2FSK mode so we can adjust the OFFSET register */
 	si4060_setup(MOD_TYPE_2FSK);
 	si4060_start_tx(0);
+	/* add some TX delay */
+	__delay_cycles(300000);
 
 	aprs_tick = 0;
 	do {

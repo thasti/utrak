@@ -9,11 +9,11 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x01"
+#define PAYLOAD_NAME "0x03"
 /* payload telemetry interval */
 #define TLM_INTERVAL 30
 /* telemetry string prefix for RX syncronisation */
-#define SYNC_PREFIX		"   "
+#define SYNC_PREFIX		"   $$"
 /* telemetry string postfix for tlm parser */
 #define TX_BUF_POSTFIX		"\n\n"
 
