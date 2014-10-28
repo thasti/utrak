@@ -26,9 +26,7 @@ volatile uint16_t overflows = 0;	/* ISR overflow counter */
 volatile uint16_t tick = 0;		/* flag for timer handling (ISR -> main) */
 volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
 uint16_t sent_id = 0;			/* sentence id */
-volatile uint32_t dco_freq = 0;		/* measured frequency of dco (ISR -> main) */
 volatile uint32_t ta1_freq = 0;		/* measured frequency of ta1clk (ISR -> main) */
-volatile uint16_t dco_ovf = 0;		/* dco frequency counter ISR overflow counter */
 volatile uint16_t ta1_ovf = 0;		/* ta1 frequency counter ISR overflow counter */
 volatile uint16_t fc_tick = 0;		/* flag for frequency handling */
 volatile uint16_t stx = 0;			/* uart byte to transmit (main -> ISR) */
@@ -504,15 +502,6 @@ int main(void) {
 				stx_len = 10;
 				while(stx_len);
 			}
-			stx = ((',')<<1) + (1<<9);
-			stx_len = 10;
-			while(stx_len);
-			i32toa(dco_freq, 8, &uart_buf);
-			for (i=0;i<8;i++) {
-				stx = ((uart_buf[i])<<1) + (1<<9);
-				stx_len = 10;
-				while(stx_len);
-			}
 			stx = (('\n')<<1) + (1<<9);
 			stx_len = 10;
 			while(stx_len);
@@ -622,19 +611,19 @@ __interrupt void Timer_A (void)
 __interrupt void capture (void)
 {
 	static uint16_t old_ta1 = 0;
-	static uint16_t old_dco = 0;
 	uint16_t new_ta1;
-	uint16_t new_dco;
-
 	new_ta1 = TA1R;
-	new_dco = TB0R;
+	if (new_ta1 < 32768) {
+		if (TA1IV & TA1IV_TAIFG) {
+			ta1_ovf++;
+			TA1IV &= ~TA1IV_TAIFG;
+		}
+	}
+
 	ta1_freq = ta1_ovf * ((uint32_t)1<<16) + new_ta1 - old_ta1;
-	dco_freq = dco_ovf * ((uint32_t)(DCO_FREQ + UART_BAUDRATE/2) / UART_BAUDRATE) + new_dco - old_dco;
 	ta1_ovf = 0;
-	dco_ovf = 0;
 	fc_tick = 1;
 	old_ta1 = new_ta1;
-	old_dco = new_dco;
 	P1IFG &= ~CLK_GPS;
 }
 
@@ -661,7 +650,6 @@ __interrupt void count_ovf (void)
 #pragma vector = TIMER0_B0_VECTOR
 __interrupt void stx_isr (void)
 {
-	dco_ovf++;
 	if (stx_len) {
 		if (stx & 1)
 			P1OUT |= UART;
