@@ -112,7 +112,7 @@ void hw_init(void) {
 	UCA0BR1 = 0;
 	UCA0MCTLW = (0xFD<<8)+(5<<4)+UCOS16;	/* set UCA0BRS */
 	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
-	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
+	//UCA0IE |= UCRXIE;			/* Enable RX interrupt */
 
 	/* USCI_B (Si4060 SPI) init */
 	UCB0CTLW0 = UCSWRST;			/* Put state machine in reset */
@@ -493,10 +493,10 @@ int main(void) {
 	si4060_start_tx(0);
 	P1IE |= CLK_GPS;	/* activate frequency counter */
 	TA1CTL |= TAIE;
-	TB0CCTL0 = CCIE;	/* enable debug UART */
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		if (fc_tick) {
+			TB0CCTL0 = CCIE;	/* enable debug UART */
 			fc_tick = 0;
 			i32toa(ta1_freq, 8, &uart_buf);
 			for (i=0;i<8;i++) {
@@ -516,6 +516,7 @@ int main(void) {
 			stx = (('\n')<<1) + (1<<9);
 			stx_len = 10;
 			while(stx_len);
+			TB0CCTL0 = 0;	/* disable debug UART */
 		}
 	}
 	/* entering wait state */
