@@ -152,8 +152,8 @@ int main(void) {
 		if ((!tx_buf_rdy) && (seconds > TLM_INTERVAL)) {
 			seconds = 0;
 			prepare_tx_buffer();
-			tx_aprs(APRS_BAND_2M);
-			tx_aprs(APRS_BAND_70CM);
+			//tx_aprs(APRS_BAND_2M);
+			//tx_aprs(APRS_BAND_70CM);
 		}
 		tx_rtty();
 	}
