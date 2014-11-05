@@ -16,9 +16,9 @@ void aprs_init(void);
 #define WIDE_SSID	1
 
 /* data from matlab script */
-#define MARK_FCW	146
-#define SPACE_FCW	268
-#define SAMP_PER_BIT	7
+#define MARK_FCW	256
+#define SPACE_FCW	469
+#define SAMP_PER_BIT	4
 
 /* AX.25 header consists of:
  * 	7 bytes source

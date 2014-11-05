@@ -75,7 +75,7 @@
 /* Clock defitions */
 #define FOSC	8000000UL				/* DCO frequency */
 #define PRESC	8					/* SMCLK prescaler */
-#define N_MAT	119					/* from MATLAB script */
+#define N_MAT	208					/* from MATLAB script */
 
 #define FT	FOSC / PRESC / N_MAT
 #define N100HZ	FT / 100

@@ -218,7 +218,7 @@ void tx_aprs(uint8_t band) {
 		if (aprs_tick) {
 			/* running with APRS sample clock */
 			aprs_tick = 0;
-			if (++samp_cnt >= 7) {
+			if (++samp_cnt >= SAMP_PER_BIT) {
 				/* running with bit clock (1200 / sec) */
 				WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 				samp_cnt = 0;
