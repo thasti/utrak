@@ -16,6 +16,7 @@
 #include "aprs.h"
 #include "hw.h"
 #include "tlm.h"
+#include "rtty.h"
 
 /*
  * GLOBAL VARIABLES
@@ -25,7 +26,7 @@
  * housekeeping variables
  */
 volatile uint16_t seconds = 0;		/* timekeeping via timer */
-volatile uint16_t rtty_tick = 0;	/* flag for rtty handling (ISR -> main) */
+volatile uint16_t tlm_tick = 0;		/* flag for slow telemetry handling (ISR -> main) */
 volatile uint16_t aprs_tick = 0;	/* flag for APRS handling (ISR -> main) */
 
 /*
@@ -195,13 +196,13 @@ __interrupt void USCI_A0_ISR(void)
 __interrupt void Timer_A (void)
 {
 	static uint16_t sec_overflows = 0;	/* overflow counter for second generation */
-	static uint16_t rtty_overflows = 0;	/* overflow counter for rtty baud rate */
+	static uint16_t tlm_overflows = 0;	/* overflow counter for RTTY/DominoEX baud rate */
 
 	aprs_tick = 1;
-	rtty_overflows++;
-	if (rtty_overflows >= N100HZ) {
-		rtty_tick = 1;
-		rtty_overflows = 0;
+	tlm_overflows++;
+	if (tlm_overflows >= N100HZ) {
+		tlm_tick = 1;
+		tlm_overflows = 0;
 	}
 	sec_overflows++;
 	if (sec_overflows >= N1HZ) {
