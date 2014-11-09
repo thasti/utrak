@@ -1,37 +1,30 @@
 # uTrak miniature tracker repository
 
-## abstract 
-this repository contains software and hardware design files for uTrak - the tracker of a series of small high altitude balloons. software will be implemented for a MSP430 MCU, with test programs runnable on a PC.
-project documentation can be found here: http://88.198.50.117/dokuwiki/doku.php?id=projekte:utrak:start
+## Abstract 
+This repository contains software and hardware design files for uTrak - the tracker of a series of small high altitude balloons. The software is implemented for a MSP430 MCU, with test programs runnable on a PC.
+project documentation can be found here: http://www.dooce.de/dokuwiki/doku.php?id=projekte:utrak:start
 
-the following tasks shall be performed by the software:
-* filtering and reading GPGGA-sentences from GPS - extracting position, altitude
-* reading supply voltage via internal ADC
-* reading die temperature via internal ADC
-* generating valid telemetry frames (including position, altitude, supply voltage, temperature)
-* configuring the Si4060 transmitter IC
-* output data for telemetry via GPIO to Si4060
-* power management for MCU and external hardware
-* transmission of APRS position reports
+![uTrak PCB v1](pic/utrak-pcb-v1.jpg)
+
+The following tasks shall be performed by the software:
+* Filtering and reading GPGGA-sentences from GPS - extracting position, altitude
+* Measuring supply voltage with internal ADC
+* Reading die temperature with internal ADC
+* Generating telemetry frames (Including position, altitude, supply voltage, temperature)
+* Configuring the Si4060 transmitter IC
+* Power management for MCU and external hardware
+* Transmission of APRS position reports
 
 ## GPS input
-the MSP430 USART is used to store one NMEA-sentence to RAM (from $ to newline). filtering and processing is controlled by a simple finite state machine. fix data (position and altitude) are extracted and converted to HAB telemetry compatible format and APRS frames
+The MSP430 USART is used to store one NMEA-sentence to RAM (from $ to newline). Filtering and processing is controlled by a simple finite state machine. Fix data (position and altitude) are extracted and converted to HAB telemetry compatible format and APRS frames.
 
-## telemetry generation
-from valid GPS data and telemetry data, packets are generated. the text string formatted to be sent in 7 bit ASCII over RTTY. APRS transmission is done on EU APRS frequency (144.800MHz) and the telmetry frequency.
+## Telemetry generation
+From valid GPS data and telemetry data, packets are generated. The text string is formatted to be sent in 7 bit ASCII over RTTY. APRS transmission is done on EU APRS frequency (144.800MHz) and the telemetry frequency.
 
-## power management
-focus of the mission is to get power consumption down as low as possible. this includes using all the available power saving features of the MSP430 and peripherals. this includes
-* low power modes of the MSP430
-* disabling unused peripherals
-* power down mode of the GPS module
-* disabling RF stage
-
-## software flow
-software is implemented as simple as possible, avoiding software errors to cause lock-ups of the controller. WDT is used to recover from possible errors.
-
-* at power up: all hw is initialised, GPS is told to only output one sentence type, Si4060 is initialised
-* state 1: transmitting blips, waiting for a stable GPS fix
-* once a fix is there, the GPS is put into power save mode
-* state 2: getting data from the GPS, generating telemetry, transmitting
+## Power management
+Focus of the software is to get power consumption down as low as possible. This includes using all the available power saving features of the MSP430 and peripherals:
+* Low power modes of the MSP430
+* Disabling unused peripherals
+* Power down mode of the GPS module
+* Disabling RF stage
 
