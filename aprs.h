@@ -11,7 +11,7 @@ void aprs_init(void);
 /* APRS destination SSID is 0 */
 #define DST_SSID	0
 /* APRS source SSID */
-#define SRC_SSID	3
+#define SRC_SSID	4
 /* WIDE1-x SSID */
 #define WIDE_SSID	1
 
