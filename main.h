@@ -11,7 +11,8 @@
 /* payload name */
 #define PAYLOAD_NAME "0x03"
 /* payload telemetry interval */
-#define TLM_INTERVAL 30
+#define TLM_INTERVAL 	30
+#define TLM_DOMINOEX
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
 /* telemetry string postfix for tlm parser */
@@ -78,7 +79,12 @@
 #define N_MAT	208					/* from MATLAB script */
 
 #define FT	FOSC / PRESC / N_MAT
-#define N100HZ	FT / 100
+#ifdef TLM_DOMINOEX
+/* calculation: FT / 15.625, needs some precision.. */
+#define NTLM	308
+#else
+#define NTLM	FT / 100
+#endif
 #define N1HZ	FT
 
 

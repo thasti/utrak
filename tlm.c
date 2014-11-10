@@ -1,6 +1,7 @@
 #include <msp430.h>
 #include <inttypes.h>
 #include "main.h"
+#include "tlm.h"
 #include "nmea.h"
 #include "si4060.h"
 #include "hw.h"
@@ -46,16 +47,16 @@ void tx_blips(uint8_t sats) {
 			P1OUT |= SI_DATA;
 			P1OUT |= LED_A;
 			break;
-		case 5:
+		case 1+BLIP_FACTOR:
 			P1OUT &= ~SI_DATA;
 			P1OUT &= ~LED_A;
 			break;
-		case 30:
+		case 6*BLIP_FACTOR:
 			if (sats != 0) {
 				count = 0;
 			}
 			break;
-		case 60:
+		case 10*BLIP_FACTOR:
 			count = 0;
 			break;
 		default:

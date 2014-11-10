@@ -17,6 +17,7 @@
 #include "hw.h"
 #include "tlm.h"
 #include "rtty.h"
+#include "dominoex.h"
 
 /*
  * GLOBAL VARIABLES
@@ -156,7 +157,11 @@ int main(void) {
 			tx_aprs(APRS_BAND_2M);
 			tx_aprs(APRS_BAND_70CM);
 		}
+#ifdef TLM_DOMINOEX
+		tx_dominoex();
+#else
 		tx_rtty();
+#endif
 	}
 }
 
@@ -200,7 +205,7 @@ __interrupt void Timer_A (void)
 
 	aprs_tick = 1;
 	tlm_overflows++;
-	if (tlm_overflows >= N100HZ) {
+	if (tlm_overflows >= NTLM) {
 		tlm_tick = 1;
 		tlm_overflows = 0;
 	}
