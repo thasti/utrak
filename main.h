@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x03"
+#define PAYLOAD_NAME "0x04"
 /* payload telemetry interval */
 #define TLM_INTERVAL 	30
 #define TLM_DOMINOEX
