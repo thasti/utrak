@@ -10,6 +10,7 @@
 #include "aprs.h"
 
 extern volatile uint16_t aprs_tick;
+extern volatile uint16_t aprs_baud_tick;
 extern uint16_t aprs_buf_len;
 extern char aprs_buf[APRS_BUF_LEN];
 extern char tlm_lat[];
@@ -187,7 +188,6 @@ void tx_aprs(uint8_t band) {
 	uint16_t fcw = SPACE_FCW;
 	uint16_t pac = 0;
 	uint16_t offset = 0;
-	uint8_t samp_cnt = 0;
 
 	switch (band) {
 		case APRS_BAND_2M:
@@ -218,10 +218,10 @@ void tx_aprs(uint8_t band) {
 		if (aprs_tick) {
 			/* running with APRS sample clock */
 			aprs_tick = 0;
-			if (++samp_cnt >= SAMP_PER_BIT) {
+			if (aprs_baud_tick) {
 				/* running with bit clock (1200 / sec) */
 				WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
-				samp_cnt = 0;
+				aprs_baud_tick = 0;
 				if (get_next_bit()) {
 					fcw = SPACE_FCW;
 				} else {

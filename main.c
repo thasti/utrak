@@ -27,8 +27,10 @@
  * housekeeping variables
  */
 volatile uint16_t seconds = 0;		/* timekeeping via timer */
+volatile uint16_t sec_overflows = 0;	/* overflow counter for second generation */
 volatile uint16_t tlm_tick = 0;		/* flag for slow telemetry handling (ISR -> main) */
 volatile uint16_t aprs_tick = 0;	/* flag for APRS handling (ISR -> main) */
+volatile uint16_t aprs_baud_tick = 0;	/* flag for APRS baud rate (ISR -> main) */
 
 /*
  * the NMEA data buffer
@@ -106,6 +108,7 @@ int main(void) {
 	P1OUT |= LED_A;
 	/* initialize the transmission buffer (for development only) */
 	init_tx_buffer();
+
 	/* reset the radio chip from shutdown */
 	si4060_reset();
 	/* check radio communication */
@@ -113,6 +116,9 @@ int main(void) {
 	if (i != 0x4060) {
 		while(1);
 	}
+	si4060_power_up();
+	si4060_setup(MOD_TYPE_OOK);
+
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 	/* wait for the GPS to boot */
 	gps_startup_delay();
@@ -124,9 +130,9 @@ int main(void) {
 	gps_set_power_save();
 	gps_power_save(0);
 	gps_save_settings();
+
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
-	si4060_power_up();
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_freq_70cm();
 	si4060_start_tx(0);
@@ -193,25 +199,77 @@ __interrupt void USCI_A0_ISR(void)
 }
 
 /*
- * Timer A0 ISR
+ * Timer0 A0 ISR
+ * CCR0 compare interrupt (highest priority)
  *
- * realises a systick function. tick-flag can be polled by main program
+ * generates the various baud rates and clocks needed in the design
  */
 #pragma vector = TIMER0_A0_VECTOR
-__interrupt void Timer_A (void)
+__interrupt void TIMER0_A0_ISR (void)
 {
-	static uint16_t sec_overflows = 0;	/* overflow counter for second generation */
-	static uint16_t tlm_overflows = 0;	/* overflow counter for RTTY/DominoEX baud rate */
-
+	TA0CCR0 += N_APRS_NCO - 1;
 	aprs_tick = 1;
-	tlm_overflows++;
-	if (tlm_overflows >= NTLM) {
-		tlm_tick = 1;
-		tlm_overflows = 0;
-	}
-	sec_overflows++;
-	if (sec_overflows >= N1HZ) {
-		seconds++;
-		sec_overflows = 0;
-	}
 }
+
+/*
+ * Timer0 A0 ISR
+ * Realizes APRS baud rate, telemetry baud rate and second counter
+ * as msp430-gcc does not support the __even_in_range-intrinsic,
+ * we use this inline assembly routine for the vectoring.
+ *
+ * source: http://sourceforge.net/p/mspgcc/mailman/message/25525509/
+ */
+#pragma vector = TIMER0_A1_VECTOR
+__interrupt void timera0x_handler(void)
+{
+	__asm__ __volatile__("add   %[src]       ,r0       ":: [src] "m" (TA0IV));
+	__asm__ __volatile__("reti                         "::); // NO INT
+	__asm__ __volatile__("jmp   timera0_cc1_handler    "::); // CC1
+	__asm__ __volatile__("jmp   timera0_cc2_handler    "::); // CC2
+	__asm__ __volatile__("reti                         "::); // RESERVED
+	__asm__ __volatile__("reti                         "::); // RESERVED
+	__asm__ __volatile__("reti                         "::); // RESERVED
+	__asm__ __volatile__("reti                         "::); // RESERVED
+	__asm__ __volatile__("jmp   timera0_ifg_handler    "::); // IFG
+}
+
+/*
+ * CCR1, generates APRS baud rate
+ */
+__interrupt void timera0_cc1_handler(void)
+{
+		TA0CCR1 += N_APRS_BAUD - 1;
+		aprs_baud_tick = 1;
+}
+
+/*
+ * CCR2, generates RTTY baud rate
+ */
+__interrupt void timera0_cc2_handler(void)
+{
+#ifndef	TLM_DOMINOEX
+		TA0CCR2 += N_TLM;
+		tlm_tick = 1;
+		sec_overflows++;
+		if (sec_overflows >= TLM_HZ) {
+			seconds++;
+			sec_overflows = 0;
+		}
+#endif
+}
+
+/*
+ * Overflow, generates DominoEX baud rate
+ */
+__interrupt void timera0_ifg_handler(void)
+{
+#ifdef TLM_DOMINOEX
+		tlm_tick = 1;
+		sec_overflows++;
+		if (sec_overflows >= TLM_HZ) {
+			seconds++;
+			sec_overflows = 0;
+		}
+#endif
+}
+

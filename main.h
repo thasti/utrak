@@ -73,20 +73,20 @@
 /* Port J */
 #define CS	BIT0
 
-/* Clock defitions */
-#define FOSC	8000000UL				/* DCO frequency */
-#define PRESC	8					/* SMCLK prescaler */
-#define N_MAT	208					/* from MATLAB script */
+/* Timer compare defitions */
+/* as some values need fine tuning to keep error in a margin and are constrained, */
+/* these should be recalculated manually when the CPU frequency is changed by design */
+#define N_APRS_NCO	208		/* prescaler for APRS sample clock, matlab script for min. error */
+#define N_APRS_BAUD	852		/* 16367600/16/1200Hz = 852,48 */
 
-#define FT	FOSC / PRESC / N_MAT
 #ifdef TLM_DOMINOEX
-/* calculation: FT / 15.625, needs some precision.. */
-#define NTLM	308
+/* this should not be needed as the overflow interrupt of timer a is used anyway */
+#define N_TLM	65536 - 1		/* 16367600/2^20 = 15,609 = DomEX baud rate (for coherency) */
+#define TLM_HZ	16			/* tlm rate ~ 16 Hz */
 #else
-#define NTLM	FT / 100
+#define N_TLM	10230			/* 16367600/16/100 Hz = 10229,75 */
+#define TLM_HZ	100			/* tlm rate ~ 100 Hz */
 #endif
-#define N1HZ	FT
-
 
 /* ADC calibration locations */
 #define CALADC10_15V_30C  *((unsigned int *)0x1A1A)   // Temperature Sensor Calibration-30 C

@@ -9,6 +9,7 @@
 
 #include <inttypes.h>
 #include <msp430.h>	/* for __delay_cycles() */
+#include "hw.h"
 #include "spi.h"
 #include "si4060.h"
 #include "main.h"	/* for GPIO constants */
@@ -352,6 +353,8 @@ void si4060_start_tx(uint8_t channel) {
 	spi_write(0x00);
 	spi_write(0x00);
 	spi_deselect();
+	/* enable the external oscillator */
+	enable_xt1();
 }
 
 /*
@@ -360,6 +363,8 @@ void si4060_start_tx(uint8_t channel) {
  * makes the Si4060 stop all transmissions by transistioning to SLEEP state
  */
 void si4060_stop_tx(void) {
+	/* disable the external oscillator */
+	disable_xt1();
 	si4060_change_state(STATE_SLEEP);
 }
 
@@ -395,8 +400,11 @@ void si4060_setup(uint8_t mod_type) {
 			GLOBAL_XO_TUNE,
 			0x00);
 #endif
+	si4060_set_property_8(PROP_GLOBAL,
+			GLOBAL_CLK_CFG,
+			DIV_CLK_EN + DIV_CLK_SEL_2);
 	/* set up GPIOs */
-	si4060_gpio_pin_cfg(GPIO_MODE_DONOTHING,
+	si4060_gpio_pin_cfg(GPIO_MODE_DIV_CLK,
 			GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
 			PULL_CTL + GPIO_MODE_INPUT,

@@ -28,3 +28,21 @@ Focus of the software is to get power consumption down as low as possible. This 
 * Power down mode of the GPS module
 * Disabling RF stage
 
+# Hardware modifications
+After v1, several modifications were made to the PCB to enable more features being possible. These include:
+
+## TCXO as reference source
+Frequency stability was totally unacceptable with crystals. In addition, the datasheet wrongly states that a TCXO has to be connected to XIN, while it has to be connected to XOUT.
+Needed after commit: edc32003
+- Instead of the XTAL, solder TCXO with clipped sine output, 16.3676Mhz.
+- cut trace from C8 to XIN
+- solder C=100pF instead as C8
+- run wire from right pad of C8 to XOUT-pad (right pad of R5)
+- solder bridge over R6
+- do not place R4, R5 and R7
+
+## TCXO source as clock input to MSP430
+As DominoEX needs to me modulated coherently, MCU and PLL need to run off the same clock. Therefore, the Si4060 will buffer the TXCO signal and output it via GPIO to the MCU.
+Needed after commit: ee2a82f8
+- solder wire from MSP430 QFN PAD 21 (PJ.4, XIN) to Si4060 QFN PAD 9 (GPIO0)
+

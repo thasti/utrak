@@ -8,6 +8,9 @@ volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
  * hw_init
  *
  * hardware initialisation routine
+ * note: even though the tracker is running from the DCO in this routine, all register values are computed
+ * for the TXCO input. Only use the SPI to configure the Si4060 after this routine. UART baud rate and timers
+ * will not be correct until enable_xt1() is called.
  *
  * GPIO init
  *   UCSI-pin direction is don't care (see UG), pull down for MISO
@@ -43,13 +46,17 @@ void hw_init(void) {
 	/* GPIO init Port J */
 	PJOUT |= CS;
 	PJDIR = CS;
+	/* enable input of TCXO on Port J */
+	PJSEL0 |= BIT4;
+	PJSEL1 &= ~BIT4;
 
 	/* USCI_A (GPS UART) init */
 	UCA0CTL1 = UCSWRST; 			/* reset USCI */
 	UCA0CTL1 |= UCSSEL_2;			/* SMCLK */
+	/* UART running from DCO here, so use baud rate settings for this frequency */
 	UCA0BR0 = 6;
 	UCA0BR1 = 0;
-	UCA0MCTLW = (0x11<<8)+(8<<4)+UCOS16;	/* set UCA0BRS */
+	UCA0MCTLW = (0x11<<8)+(8<<4)+UCOS16;	/* set UCA0BRS(<<8) and BRF(<<4) */
 	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
 	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
 
@@ -63,12 +70,63 @@ void hw_init(void) {
 	UCB0CTLW0 &= ~UCSWRST;			/* Initialize USCI state machine */
 
 	/* CCR0 is calculated by MATLAB script for minimum frequency error */
-	TA0CCTL0 = CCIE;			/* TACCR0 interrupt enabled */
-	TA0CCR0 = N_MAT - 1;
-	TA0CTL = TASSEL_2 + MC_1;		/* SMCLK, UP mode */
+	TA0CCR0 = N_APRS_NCO - 1;
+	TA0CCR1 = N_APRS_BAUD - 1;
+	TA0CCR2 = N_TLM - 1;
+	TA0CCTL0 = CCIE;
+	TA0CCTL1 = CCIE;
+#ifndef TLM_DOMINOEX
+	TA0CCTL2 = CCIE;
+#endif
+	TA0CTL = TASSEL_2 + MC_2 + TAIE;	/* SMCLK, continuous mode */
 
 	/* Enable Interrupts */
 	__bis_SR_register(GIE);			/* set interrupt enable bit */
+}
+
+/* enable_xt1
+ *
+ * this changes the clock source for the MSP430 to the external TCXO.
+ * before calling this function, the Si4060 has to be configured to output the clock on a GPIO.
+ *
+ * this GPIO has to be connected to the XIN Pin (Port J, Bit 4).
+ */
+void enable_xt1(void) {
+	/* DCO init, XT1 is 16.3676MHz / 2 */
+	CSCTL0_H = 0xA5;					/* write CS password */
+	CSCTL1 = DCOFSEL_3;					/* set DCO to 5.37MHz */
+	CSCTL4 |= XT1BYPASS + XTS;				/* enable XT1 bypass */
+	CSCTL4 &= ~XT1OFF;
+	/* select XT1 as the clock source */
+	CSCTL2 = SELA__XT1CLK + SELS__XT1CLK + SELM__XT1CLK;	/* XT1 as ACLK, SMCLK, MCLK */
+	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__1;			/* divide all sources */
+	/* wait for clock source settling */
+	do {
+		CSCTL5 &= ~XT1OFFG;
+		SFRIFG1 &= ~OFIFG;
+	} while (SFRIFG1 & OFIFG);
+	/* enable the fault interrupt */
+	SFRIE1 |= OFIE;
+	UCA0MCTLW = (0xAA<<8)+(10<<4)+UCOS16;	/* set UCA0BRS(<<8) and BRF(<<4) */
+}
+
+/* disable_xt1
+ *
+ * this changes the clock source for the MSP430 to the internal DCO.
+ * DCO is running at 8MHz
+ */
+void disable_xt1(void) {
+	SFRIE1 &= ~OFIE;
+	/* DCO init, XT1 is 16.3676MHz / 2 */
+	CSCTL0_H = 0xA5;					/* write CS password */
+	CSCTL1 = DCOFSEL_3;					/* set DCO to 5.37MHz */
+	CSCTL4 |= XT1BYPASS + XTS;				/* enable XT1 bypass */
+	CSCTL4 |= XT1OFF;
+	/* select XT1 as the clock source */
+	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* XT1 as ACLK, SMCLK, MCLK */
+	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__1;			/* divide all sources */
+	/* set the best guess UART baud rate for 8.0 MHz DCO */
+	UCA0MCTLW = (0x11<<8)+(8<<4)+UCOS16;	/* set UCA0BRS(<<8) and BRF(<<4) */
 }
 
 /* serial_enable
@@ -180,3 +238,12 @@ __interrupt void ADC10_ISR(void)
 	}
 }
 
+#pragma vector=UNMI_VECTOR
+__interrupt void UNMI_ISR(void)
+{
+	do {
+		CSCTL5 &= ~XT1OFFG;
+		SFRIFG1 &= ~OFIFG;
+		__delay_cycles(25000);
+	} while (SFRIFG1 & OFIFG);
+}
