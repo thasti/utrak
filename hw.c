@@ -9,8 +9,7 @@ volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
  *
  * hardware initialisation routine
  * note: even though the tracker is running from the DCO in this routine, all register values are computed
- * for the TXCO input. Only use the SPI to configure the Si4060 after this routine. UART baud rate and timers
- * will not be correct until enable_xt1() is called.
+ * for the TXCO input. In case the TCXO should be used for coherent modulation, call enable_xt1 afterwards.
  *
  * GPIO init
  *   UCSI-pin direction is don't care (see UG), pull down for MISO

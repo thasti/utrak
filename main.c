@@ -100,6 +100,7 @@ uint8_t uart_process(void) {
 int main(void) {
 	uint16_t fix_sats = 0;
 	uint16_t i;
+	uint16_t blip_sent = 0;
 	/* set watchdog timer interval to 11 seconds */
 	/* reset occurs if Si4060 does not respond or software locks up */
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
@@ -160,13 +161,23 @@ int main(void) {
 		if ((!tx_buf_rdy) && (seconds > TLM_INTERVAL)) {
 			seconds = 0;
 			prepare_tx_buffer();
+#ifdef TLM_APRS
 			tx_aprs(APRS_BAND_2M);
 			tx_aprs(APRS_BAND_70CM);
+#endif
 		}
 #ifdef TLM_DOMINOEX
 		tx_dominoex();
 #else
 		tx_rtty();
+		if ((seconds == (TLM_INTERVAL - 3)) && blip_sent == 0) {
+			si4060_start_tx(0);
+			blip_sent = 1;
+		}
+		if (seconds == TLM_INTERVAL - 2) {
+			si4060_stop_tx();
+			blip_sent = 0;
+		}
 #endif
 	}
 }

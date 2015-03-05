@@ -14,7 +14,7 @@
 /* tlm middle frequency minus FM deviation */
 #define RF_FREQ_HZ_70CM		(434075000.0f - 2700.0f)
 #define RF_FREQ_HZ_2M		(144800000.0f - 2700.0f)
-#define RF_DEV_HZ		100.0f
+#define RF_DEV_HZ		200.0f
 
 #define F_INT_70CM		(2 * XO_FREQ / 8)
 #define F_INT_2M		(2 * XO_FREQ / 24)

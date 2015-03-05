@@ -26,7 +26,6 @@ void tx_rtty(void) {
 	static uint16_t char_state = IDLE;
 	static uint8_t data = 0;
 	static uint16_t i = 0;
-	static uint16_t wait = 0;
 	if (!tx_buf_rdy) {
 		if (tx_state == 1) {
 			si4060_stop_tx();
@@ -45,10 +44,6 @@ void tx_rtty(void) {
 		return;
 
 	tlm_tick = 0;
-	wait = !wait;
-	if (wait)
-		return;
-	/* run this part only every second tick */
 	switch (char_state) {
 		case IDLE:
 			P1OUT |= SI_DATA;
