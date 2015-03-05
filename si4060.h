@@ -12,7 +12,7 @@
 #define USE_TCXO		/* TCXO connected to XOUT pin */
 #define XO_FREQ			16367600UL
 /* tlm middle frequency minus FM deviation */
-#define RF_FREQ_HZ_70CM		(434075000.0f - 2700.0f)
+#define RF_FREQ_HZ_70CM		(434575000.0f - 2700.0f)
 #define RF_FREQ_HZ_2M		(144800000.0f - 2700.0f)
 #define RF_DEV_HZ		200.0f
 
