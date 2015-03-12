@@ -9,9 +9,9 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x05"
+#define PAYLOAD_NAME "0x06"
 /* payload telemetry interval */
-#define TLM_INTERVAL 	20
+#define TLM_INTERVAL 	30
 /* #define TLM_DOMINOEX */
 /* #define TLM_APRS */
 /* telemetry string prefix for RX syncronisation */
