@@ -184,6 +184,13 @@ uint8_t get_next_bit(void) {
 }
 
 #ifndef TEST
+/* 
+ * tx_aprs
+ *
+ * transmits an APRS packet on the specified band. DOES NOT change the frequency to this band, only 
+ * selects the correct sine lookup table!
+ *
+ */
 void tx_aprs(uint8_t band) {
 	uint16_t fcw = SPACE_FCW;
 	uint16_t pac = 0;
@@ -194,13 +201,11 @@ void tx_aprs(uint8_t band) {
 			sin_offset = SIN_OFF_2M;
 			sin_max = SIN_MAX_2M;
 			sin_table = sin_table_2m;
-			si4060_freq_2m();
 			break;
 		case APRS_BAND_70CM:
 			sin_offset = SIN_OFF_70CM;
 			sin_max = SIN_MAX_70CM;
 			sin_table = sin_table_70cm;
-			si4060_freq_70cm();
 			break;
 	}
 

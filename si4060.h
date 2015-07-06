@@ -13,15 +13,21 @@
 #define XO_FREQ			16367600UL
 /* tlm middle frequency minus FM deviation */
 #define RF_FREQ_HZ_70CM		(434575000.0f - 2700.0f)
-#define RF_FREQ_HZ_2M		(144800000.0f - 2700.0f)
+#define RF_FREQ_HZ_2M_EU	(144800000.0f - 2700.0f)
+#define RF_FREQ_HZ_2M_US	(144390000.0f - 2700.0f)
+#define RF_FREQ_HZ_2M_CN	(144640000.0f - 2700.0f)
 #define RF_DEV_HZ		200.0f
 
 #define F_INT_70CM		(2 * XO_FREQ / 8)
 #define F_INT_2M		(2 * XO_FREQ / 24)
 #define FDIV_INTE_70CM		((RF_FREQ_HZ_70CM / F_INT_70CM) - 1)
 #define FDIV_FRAC_70CM		((RF_FREQ_HZ_70CM - F_INT_70CM * (int)FDIV_INTE_70CM)*((uint32_t)1 << 19)) / F_INT_70CM
-#define FDIV_INTE_2M		((RF_FREQ_HZ_2M / F_INT_2M) - 1)
-#define FDIV_FRAC_2M		((RF_FREQ_HZ_2M - F_INT_2M * (int)FDIV_INTE_2M)*((uint32_t)1 << 19)) / F_INT_2M
+#define FDIV_INTE_2M_EU		((RF_FREQ_HZ_2M_EU / F_INT_2M) - 1)
+#define FDIV_FRAC_2M_EU		((RF_FREQ_HZ_2M_EU - F_INT_2M * (int)FDIV_INTE_2M_EU)*((uint32_t)1 << 19)) / F_INT_2M
+#define FDIV_INTE_2M_US		((RF_FREQ_HZ_2M_US / F_INT_2M) - 1)
+#define FDIV_FRAC_2M_US		((RF_FREQ_HZ_2M_US - F_INT_2M * (int)FDIV_INTE_2M_US)*((uint32_t)1 << 19)) / F_INT_2M
+#define FDIV_INTE_2M_CN		((RF_FREQ_HZ_2M_CN / F_INT_2M) - 1)
+#define FDIV_FRAC_2M_CN		((RF_FREQ_HZ_2M_CN - F_INT_2M * (int)FDIV_INTE_2M_CN)*((uint32_t)1 << 19)) / F_INT_2M
 #define FDEV			((((uint32_t)1 << 19) * 8 * RF_DEV_HZ)/(2*XO_FREQ))
 
 /* number of retries for SPI transmission (reading CTS) */
@@ -40,7 +46,9 @@ void si4060_setup(uint8_t mod_type);
 void si4060_change_state(uint8_t state);
 uint16_t si4060_part_info(void);
 uint8_t si4060_get_cts(uint8_t read_response);
-void si4060_freq_2m(void);
+void si4060_freq_aprs_eu(void);
+void si4060_freq_aprs_us(void);
+void si4060_freq_aprs_cn(void);
 void si4060_freq_70cm(void);
 
 /* ===== command definitions ===== */

@@ -18,6 +18,7 @@
 #include "tlm.h"
 #include "rtty.h"
 #include "dominoex.h"
+#include "geofence.h"
 
 /*
  * GLOBAL VARIABLES
@@ -162,6 +163,7 @@ int main(void) {
 			seconds = 0;
 			prepare_tx_buffer();
 #ifdef TLM_APRS
+			geofence_aprs_frequency(tlm_lat, tlm_lon);
 			tx_aprs(APRS_BAND_2M);
 			si4060_freq_70cm();
 #endif
