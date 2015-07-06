@@ -163,7 +163,7 @@ int main(void) {
 			prepare_tx_buffer();
 #ifdef TLM_APRS
 			tx_aprs(APRS_BAND_2M);
-			tx_aprs(APRS_BAND_70CM);
+			si4060_freq_70cm();
 #endif
 		}
 #ifdef TLM_DOMINOEX
