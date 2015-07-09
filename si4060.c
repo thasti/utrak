@@ -496,22 +496,22 @@ void si4060_freq_aprs_cn(void) {
 			SIN_OFF_2M);
 }
 
-void si4060_freq_70cm(void) {
-	/* setup divider to 8 (for 70cm ISM band) */
+void si4060_freq_2m_rtty(void) {
+	/* setup divider to 24 (for 2m-band) */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
-			SY_SEL_1 | FVCO_DIV_8);
+			SY_SEL_1 | FVCO_DIV_24);
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
-			(uint8_t)(FDIV_INTE_70CM));
+			(uint8_t)(FDIV_INTE_2M_RTTY));
 	/* set up the fractional divider */
 	si4060_set_property_24(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_FRAC,
-			(uint32_t)(FDIV_FRAC_70CM));
+			(uint32_t)(FDIV_FRAC_2M_RTTY));
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
-			SIN_OFF_70CM);
+			SIN_OFF_2M);
 }
 

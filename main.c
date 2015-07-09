@@ -136,7 +136,7 @@ int main(void) {
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_setup(MOD_TYPE_OOK);
-	si4060_freq_70cm();
+	si4060_freq_2m_rtty();
 	si4060_start_tx(0);
 
 	/* entering wait state */
@@ -167,7 +167,7 @@ int main(void) {
 					prepare_tx_buffer();
 					geofence_aprs_frequency(tlm_lat, tlm_lon);
 					tx_aprs();
-					si4060_freq_70cm();
+					si4060_freq_2m_rtty();
 					/* possible switchover to APRS only */
 					if (!(geofence_slow_tlm_altitude(tlm_alt, tlm_alt_length))) {
 						tlm_state = TX_APRS;

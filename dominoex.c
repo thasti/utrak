@@ -80,7 +80,7 @@ void tx_dominoex(void) {
 	}
 	/* add the offset to ensure we're on the center frequency */
 	/* 16.3676 MHz TCXO results in 7,8xxHz resolution, shift for DominoEX is about double that */
-	si4060_set_offset(SIN_OFF_70CM + 2*next_tone);
+	si4060_set_offset(SIN_OFF_2M + 2*next_tone);
 
 }
 
