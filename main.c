@@ -101,7 +101,7 @@ uint8_t uart_process(void) {
 int main(void) {
 	uint16_t fix_sats = 0;
 	uint16_t i;
-	uint16_t blip_sent = 0;
+	enum {TX_RTTY, TX_APRS} tlm_state = TX_RTTY;
 	/* set watchdog timer interval to 11 seconds */
 	/* reset occurs if Si4060 does not respond or software locks up */
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
@@ -151,7 +151,7 @@ int main(void) {
 	si4060_setup(MOD_TYPE_2FSK);
 	/* activate power save mode as fix is stable */
 	gps_power_save(1);
-	seconds = TLM_INTERVAL + 1;
+	seconds = TLM_RTTY_INTERVAL + 1;
 	P1OUT &= ~LED_A;
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
@@ -159,30 +159,45 @@ int main(void) {
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 		uart_process();
-		if ((!tx_buf_rdy) && (seconds > TLM_INTERVAL)) {
-			seconds = 0;
-			prepare_tx_buffer();
-#ifdef TLM_APRS
-			geofence_aprs_frequency(tlm_lat, tlm_lon);
-			tx_aprs(APRS_BAND_2M);
-			si4060_freq_70cm();
-#endif
-		}
+		
+		switch (tlm_state) {
+			case TX_RTTY:
+				if ((!tx_buf_rdy) && (seconds > TLM_RTTY_INTERVAL)) {
+					seconds = 0;
+					prepare_tx_buffer();
+					geofence_aprs_frequency(tlm_lat, tlm_lon);
+					tx_aprs(APRS_BAND_2M);
+					si4060_freq_70cm();
+					/* possible switchover to APRS only */
+					if (!(geofence_slow_tlm_altitude(tlm_alt, tlm_alt_length))) {
+						tlm_state = TX_APRS;
+						/* set the tx buffer to not ready to inhibit tx_rtty() from sending */
+						tx_buf_rdy = 0;
+					}
+				}
 #ifdef TLM_DOMINOEX
-		tx_dominoex();
+				tx_dominoex();
 #else
-		tx_rtty();
-		if ((seconds == (TLM_INTERVAL - 3)) && blip_sent == 0) {
-			si4060_start_tx(0);
-			blip_sent = 1;
-		}
-		if (seconds == TLM_INTERVAL - 2) {
-			si4060_stop_tx();
-			blip_sent = 0;
-		}
+				tx_rtty();
 #endif
-	}
-}
+				break;
+			case TX_APRS:
+				/* change to TX_RTTY when below 4k */
+				if (seconds > TLM_APRS_INTERVAL) {
+					seconds = 0;
+					prepare_tx_buffer();
+					geofence_aprs_frequency(tlm_lat, tlm_lon);
+					tx_aprs(APRS_BAND_2M);
+					/* possible switchover to RTTY + APRS transmission */
+					if (geofence_slow_tlm_altitude(tlm_alt, tlm_alt_length)) {
+						tlm_state = TX_RTTY;
+						tx_buf_rdy = 0;
+					}
+				}
+				break;
+		} /* switch (tlm_state) */
+	} /* while(1) */
+} /* main() */
 
 /*
  * USCI A0 ISR

@@ -29,3 +29,29 @@ void geofence_aprs_frequency(char *lat, char *lon) {
 		si4060_freq_aprs_eu();
 	}
 }
+
+/* 
+ * geofence_slow_tlm_altitude
+ *
+ * if altitude is lower than 3km, RTTY shall be transmitted. this ensures that
+ * recoveries are still possible, while conserving power in higher altitudes.
+ * the RTTY telemetry needs less link margin (payload on the ground) and has
+ * longer transmission times (allowing for direction finding).
+ *
+ * returns: 1 if slow telemetry should be sent
+ *
+ */
+uint16_t geofence_slow_tlm_altitude(char *alt, int alt_len) {
+	/* alt is left-aligned and alt_len characters long */
+	if (alt_len <= 3) 	return 1;	/* lower than 1000m */
+	if (alt_len >= 5) 	return 0;	/* at least 10000m */
+	
+	/* 
+	 * altitude string is 4 characters long (implicit from checks above) 
+	 * altitude is between 1000 and 9999m
+	 */
+	if (alt[0] >= '4') 	return 0;	/* at least 4000m */
+	else 			return 1;	/* lower than 4000m */
+}
+
+

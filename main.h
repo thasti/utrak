@@ -11,9 +11,9 @@
 /* payload name */
 #define PAYLOAD_NAME "0x07"
 /* payload telemetry interval */
-#define TLM_INTERVAL 	44
+#define TLM_APRS_INTERVAL	120	
+#define TLM_RTTY_INTERVAL	30
 /* #define TLM_DOMINOEX */
-#define TLM_APRS
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
 /* telemetry string postfix for tlm parser */
