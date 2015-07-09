@@ -166,7 +166,7 @@ int main(void) {
 					seconds = 0;
 					prepare_tx_buffer();
 					geofence_aprs_frequency(tlm_lat, tlm_lon);
-					tx_aprs(APRS_BAND_2M);
+					tx_aprs();
 					si4060_freq_70cm();
 					/* possible switchover to APRS only */
 					if (!(geofence_slow_tlm_altitude(tlm_alt, tlm_alt_length))) {
@@ -187,7 +187,7 @@ int main(void) {
 					seconds = 0;
 					prepare_tx_buffer();
 					geofence_aprs_frequency(tlm_lat, tlm_lon);
-					tx_aprs(APRS_BAND_2M);
+					tx_aprs();
 					/* possible switchover to RTTY + APRS transmission */
 					if (geofence_slow_tlm_altitude(tlm_alt, tlm_alt_length)) {
 						tlm_state = TX_RTTY;

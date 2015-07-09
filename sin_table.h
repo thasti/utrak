@@ -8,6 +8,5 @@
 #define SIN_MAX_70CM	692
 
 const uint16_t sin_table_2m[256];
-const uint16_t sin_table_70cm[256];
 
 #endif

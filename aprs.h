@@ -2,7 +2,7 @@
 #define __aprs_h__
 
 #ifndef TEST
-void tx_aprs(uint8_t band);
+void tx_aprs(void);
 #else
 uint8_t get_next_bit(void);
 void aprs_init(void);
@@ -48,8 +48,5 @@ void aprs_init(void);
 #define AX25_EFLAGS	1
 
 #define AX25_FLAG	0b01111110
-
-#define APRS_BAND_2M	0
-#define APRS_BAND_70CM	1
 
 #endif
