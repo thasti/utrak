@@ -17,7 +17,6 @@
 #include "hw.h"
 #include "tlm.h"
 #include "rtty.h"
-#include "dominoex.h"
 #include "geofence.h"
 
 /*
@@ -175,11 +174,7 @@ int main(void) {
 						tx_buf_rdy = 0;
 					}
 				}
-#ifdef TLM_DOMINOEX
-				tx_dominoex();
-#else
 				tx_rtty();
-#endif
 				break;
 			case TX_APRS:
 				/* change to TX_RTTY when below 4k */

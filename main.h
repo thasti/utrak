@@ -13,7 +13,6 @@
 /* payload telemetry interval */
 #define TLM_APRS_INTERVAL	120	
 #define TLM_RTTY_INTERVAL	30
-/* #define TLM_DOMINOEX */
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
 /* telemetry string postfix for tlm parser */
