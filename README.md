@@ -43,6 +43,22 @@ Needed after commit: edc32003
 
 ## TCXO source as clock input to MSP430
 As DominoEX needs to me modulated coherently, MCU and PLL need to run off the same clock. Therefore, the Si4060 will buffer the TXCO signal and output it via GPIO to the MCU.
-Needed after commit: ee2a82f8
+Needed after commit: ee2a82f8 until 752375ca
 - solder wire from MSP430 QFN PAD 21 (PJ.4, XIN) to Si4060 QFN PAD 9 (GPIO0)
+
+# Coarse Changelog
+This changelog tries to summarize the development of the tracker firmware. See the git commit log for further information.
+
+- 05-2014: Begin of development
+- 09-2014: first test flight (RTTY 50 baud)
+- 09-2014: change from the Linx-GPS to the uBlox M8Q module
+- 10-2014: first flight with professional PCB & uBlox (0x01, 0x02)
+- 11-2014: first flight with TCXO (0x03) - frequency stability improvement
+- 10-2014: implementation of APRS transmission
+- 11-2014: implementation of DominoEX16
+- 11-2014: first flight with APRS & DominoEX16 (0x04)
+- 12-2014: reverting to RTTY, now using 100 baud (0x05, 0x06)
+- 07-2014: first good use of APRS: antenna now 2m dipole
+- 07-2014: dropped support for DominoEX
+- 07-2014: transmitting APRS only above a certain altitude (power savings)
 
