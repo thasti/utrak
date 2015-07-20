@@ -54,7 +54,7 @@ char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the act
  * contains ASCII data
  */
 uint16_t aprs_buf_len = APRS_BUF_LEN;
-char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx " APRS_COMMENT;
+char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx T=xxx V=xxxx " APRS_COMMENT;
 
 /*
  * GPS fix data and data for tlm string

@@ -11,7 +11,7 @@ void aprs_init(void);
 /* APRS destination SSID is 0 */
 #define DST_SSID	0
 /* APRS source SSID */
-#define SRC_SSID	7
+#define SRC_SSID	8
 /* WIDE1-x SSID */
 #define WIDE_SSID	1
 
@@ -35,14 +35,35 @@ void aprs_init(void);
 #define SSID_RESC	0x60
 #define HEADER_END	0x01
 
-#define APRS_COMMENT	"uTrak " PAYLOAD_NAME
-#define APRS_BUF_LEN	1 + 8 + 1 + 9 + 4 + 6 + 1 + sizeof(APRS_COMMENT) - 1
+#define APRS_COMMENT	PAYLOAD_NAME
+/*
+ * buffer length
+ * example: !5055.41N/01152.76EO/A=001029 T=AAA V=BBBB uTrak 0x07
+ * 1 = symbol table
+ * 8 = LAT_LEN + 1 (N/S)
+ * 1 = symbol code
+ * 9 = LON_LEN + 1 (E/W)
+ * 2 = O/
+ * 8 = A=001029 (feet)
+ * 1 = space
+ * 5 = T=temperature (including sign)
+ * 1 = space
+ * 6 = V=voltage (in mV)
+ * 1 = space
+ * APRS comment 
+ */
+#define APRS_BUF_LEN	1 + 8 + 1 + 9 + 2 + 8 + 1 + 5 + 1 + 6 + 1 + sizeof(APRS_COMMENT) - 1
+
 #define APRS_LAT_START	1
 #define APRS_LAT_LEN	7
 #define APRS_LON_START	10
 #define APRS_LON_LEN	8
 #define APRS_ALT_START	23
 #define APRS_ALT_LEN	6
+#define APRS_TEMP_START	32
+#define APRS_TEMP_LEN	3
+#define APRS_VOLT_START	38
+#define APRS_VOLT_LEN	4
 
 #define AX25_SFLAGS	50
 #define AX25_EFLAGS	1

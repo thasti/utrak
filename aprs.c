@@ -16,6 +16,8 @@ extern char aprs_buf[APRS_BUF_LEN];
 extern char tlm_lat[];
 extern char tlm_lon[];
 extern char tlm_alt_ft[];
+extern char tlm_temp[];
+extern char tlm_volt[];
 
 const unsigned char aprs_header[APRS_HEADER_LEN] = {
 	'A'*2, 'P'*2, 'R'*2, 'S'*2, ' '*2, ' '*2, SSID_RESC + (DST_SSID << 1),
@@ -74,6 +76,13 @@ inline void aprs_init(void) {
 	} else {
 		aprs_buf[APRS_LON_START + APRS_LON_LEN] = 'W';
 	}
+	for (i = 0; i < APRS_TEMP_LEN; i++) {
+		aprs_buf[APRS_TEMP_START + i] = tlm_temp[i];
+	}
+	for (i = 0; i < APRS_VOLT_LEN; i++) {
+		aprs_buf[APRS_VOLT_START + i] = tlm_volt[i];
+	}
+	
 	calculate_fcs();
 }
 
