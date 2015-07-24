@@ -11,14 +11,16 @@ void aprs_init(void);
 /* APRS destination SSID is 0 */
 #define DST_SSID	0
 /* APRS source SSID */
-#define SRC_SSID	8
+#define SRC_SSID	9
 /* WIDE1-x SSID */
 #define WIDE_SSID	1
 
 /* data from matlab script */
-#define MARK_FCW	256
-#define SPACE_FCW	469
-#define SAMP_PER_BIT	4
+#define APRS_MARK		0
+#define APRS_SPACE		1
+#define APRS_MARK_TICKS		11
+#define APRS_SPACE_TICKS	6
+#define APRS_BAUD_TICKS		22
 
 /* AX.25 header consists of:
  * 	7 bytes source
@@ -65,8 +67,8 @@ void aprs_init(void);
 #define APRS_VOLT_START	38
 #define APRS_VOLT_LEN	4
 
-#define AX25_SFLAGS	50
-#define AX25_EFLAGS	1
+#define AX25_SFLAGS	75
+#define AX25_EFLAGS	2
 
 #define AX25_FLAG	0b01111110
 

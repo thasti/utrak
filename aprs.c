@@ -2,13 +2,13 @@
 #include <msp430.h>
 #include "hw.h"
 #include "si4060.h"
-#include "sin_table.h"
 #include "main.h"
 #endif
 
 #include <inttypes.h>
 #include "aprs.h"
 
+extern volatile uint16_t aprs_bit;
 extern volatile uint16_t aprs_tick;
 extern volatile uint16_t aprs_baud_tick;
 extern uint16_t aprs_buf_len;
@@ -32,9 +32,6 @@ volatile uint8_t bitcnt = 8;
 volatile uint8_t onecnt = 0;
 volatile uint8_t finished = 0;
 volatile uint8_t stuffing = 0;
-volatile uint16_t sin_offset = 0;
-volatile uint16_t sin_max = 0;
-uint16_t const *sin_table;
 
 #ifndef TEST
 inline void calculate_fcs(void) {
@@ -158,7 +155,7 @@ uint8_t get_next_byte(void) {
  */
 uint8_t get_next_bit(void) {
 	static uint8_t byte = 0;
-	static uint8_t bit = 0;
+	static uint8_t bit = 1;
 	static uint8_t bit_d = 0;
 	if (bitcnt >= 8) {
 		byte = get_next_byte();
@@ -200,19 +197,11 @@ uint8_t get_next_bit(void) {
  *
  */
 void tx_aprs(void) {
-	uint16_t fcw = SPACE_FCW;
-	uint16_t pac = 0;
-	uint16_t offset = 0;
-
-	sin_offset = SIN_OFF_2M;
-	sin_max = SIN_MAX_2M;
-	sin_table = sin_table_2m;
-
 	aprs_init();
 	serial_disable();
 
 	/* use 2FSK mode so we can adjust the OFFSET register */
-	si4060_setup(MOD_TYPE_2FSK);
+	si4060_setup(MOD_TYPE_2GFSK);
 	si4060_start_tx(0);
 	/* add some TX delay */
 	__delay_cycles(300000);
@@ -222,48 +211,18 @@ void tx_aprs(void) {
 		if (aprs_tick) {
 			/* running with APRS sample clock */
 			aprs_tick = 0;
+			P1OUT ^= SI_DATA;
 			if (aprs_baud_tick) {
 				/* running with bit clock (1200 / sec) */
 				WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
 				aprs_baud_tick = 0;
+				
 				if (get_next_bit()) {
-					fcw = SPACE_FCW;
+					aprs_bit = APRS_SPACE;	
 				} else {
-					fcw = MARK_FCW;
+					aprs_bit = APRS_MARK;
 				}
 			}
-#define APRS_FM
-#ifdef APRS_FM
-			/* NCO core */
-			pac = (pac + fcw) & 1023;
-			switch (pac & 0x0300) {
-				case 0x0000:
-					/* 0 <= pac < 256 */
-					offset = sin_table[pac];
-					break;
-				case 0x0100:
-					/* 256 <= pac < 512 */
-					offset = sin_table[255 - (pac & 0x00ff)];
-					break;
-				case 0x0200:
-					/* 512 <= pac < 768 */
-					offset = sin_max - sin_table[pac & 0x00ff];
-					break;
-				case 0x0300:
-					/* 768 <= pac < 1024 */
-					offset = sin_max - sin_table[255 - (pac & 0x00ff)];
-					break;
-				default:
-					break;
-			}
-			si4060_set_offset(offset);
-#else
-			if (fcw == MARK_FCW) {
-				si4060_set_offset(0);
-			} else {
-				si4060_set_offset(70);
-			}
-#endif
 
 			/* tell us when we fail to meet the timing */
 			if (aprs_tick) {
@@ -273,9 +232,6 @@ void tx_aprs(void) {
 			}
 		}
 	} while(!finished);
-	si4060_get_cts(0);
-	si4060_set_offset(sin_offset);
-	si4060_get_cts(0);
 	si4060_stop_tx();
 	serial_enable();
 }

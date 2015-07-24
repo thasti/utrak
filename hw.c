@@ -22,17 +22,17 @@ volatile uint16_t adc_result;		/* ADC result for temp / voltage (ISR -> main) */
  *
  */
 void hw_init(void) {
-	/* DCO init, SMCLK is 8MHz divided by 8 */
+	/* DCO init */
 	CSCTL0_H = 0xA5;					/* write CS password */
-	CSCTL1 = DCOFSEL_3;					/* set DCO to 5.37MHz */
+	CSCTL1 = DCOFSEL_3;					/* set DCO to 8MHz */
 	CSCTL2 = SELA__DCOCLK + SELS__DCOCLK + SELM__DCOCLK;	/* DCO as ACLK, SMCLK, MCLK */
-	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__1;			/* divide all sources by 8 */
+	CSCTL3 = DIVA__1 + DIVS__1 + DIVM__1;			/* divide all sources */
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
 	P1OUT &= ~(LED_A + LED_K);
-	P1DIR = SI_SHDN + SI_DATA + LED_A + LED_K;				/* GPIOs for output */
-	P1SEL1 |= ADC_IN + MOSI + MISO;					/* USCI_B MOSI, MISO */
+	P1DIR = SI_SHDN + SI_DATA + LED_A + LED_K;		/* GPIOs for output */
+	P1SEL1 |= ADC_IN + MOSI + MISO;				/* USCI_B MOSI, MISO */
 	P1SEL1 &= ~(SI_SHDN + SI_DATA);
 	P1SEL0 |= ADC_IN;
 	P1SEL0 &= ~(SI_SHDN + SI_DATA + MOSI + MISO);	/* USCI_B MOSI, MISO */
@@ -53,9 +53,9 @@ void hw_init(void) {
 	UCA0CTL1 = UCSWRST; 			/* reset USCI */
 	UCA0CTL1 |= UCSSEL_2;			/* SMCLK */
 	/* UART running from DCO here, so use baud rate settings for this frequency */
-	UCA0BR0 = 6;
+	UCA0BR0 = 52;
 	UCA0BR1 = 0;
-	UCA0MCTLW = (0x11<<8)+(8<<4)+UCOS16;	/* set UCA0BRS(<<8) and BRF(<<4) */
+	UCA0MCTLW = (0x49<<8)+(1<<4)+UCOS16;	/* set UCA0BRS(<<8) and BRF(<<4) */
 	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
 	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
 
@@ -70,13 +70,9 @@ void hw_init(void) {
 
 	/* CCR0 is calculated by MATLAB script for minimum frequency error */
 	TA0CCR0 = N_APRS_NCO - 1;
-	TA0CCR1 = N_APRS_BAUD - 1;
 	TA0CCR2 = N_TLM - 1;
 	TA0CCTL0 = CCIE;
-	TA0CCTL1 = CCIE;
-#ifndef TLM_DOMINOEX
 	TA0CCTL2 = CCIE;
-#endif
 	TA0CTL = TASSEL_2 + MC_2 + TAIE;	/* SMCLK, continuous mode */
 
 	/* Enable Interrupts */

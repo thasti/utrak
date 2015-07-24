@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x08"
+#define PAYLOAD_NAME "0x09"
 /* payload telemetry interval */
 #define TLM_APRS_INTERVAL	90
 #define TLM_RTTY_INTERVAL	30
@@ -75,18 +75,12 @@
 
 /* Timer compare defitions */
 /* as some values need fine tuning to keep error in a margin and are constrained, */
-/* these should be recalculated manually when the CPU frequency is changed by design */
-#define N_APRS_NCO	208		/* prescaler for APRS sample clock, matlab script for min. error */
-#define N_APRS_BAUD	852		/* 16367600/16/1200Hz = 852,48 */
+/* these should be recalculated manually when the CPU frequency is changed  */
+/* NCO is running at 26400 hz (lowest common denominator of 1200*2 and 2200*2) */
+#define N_APRS_NCO	305		/* DCO_freq / 26400 */
 
-#ifdef TLM_DOMINOEX
-/* this should not be needed as the overflow interrupt of timer a is used anyway */
-#define N_TLM	65536 - 1		/* 16367600/2^20 = 15,609 = DomEX baud rate (for coherency) */
-#define TLM_HZ	16			/* tlm rate ~ 16 Hz */
-#else
-#define N_TLM	10230			/* 16367600/16/100 Hz = 10229,75 */
-#define TLM_HZ	100			/* tlm rate ~ 100 Hz */
-#endif
+#define N_TLM	40000 - 1		/* DCO_freq / TLM rate / 2 */
+#define TLM_HZ	100			/* tlm rate in Hz */
 
 /* ADC calibration locations */
 #define CALADC10_15V_30C  *((unsigned int *)0x1A1A)   // Temperature Sensor Calibration-30 C

@@ -13,7 +13,6 @@
 #include "spi.h"
 #include "si4060.h"
 #include "main.h"	/* for GPIO constants */
-#include "sin_table.h"
 
 /*
  * si4060_read_cmd_buf
@@ -387,6 +386,51 @@ inline void si4060_set_offset(uint16_t offset) {
 }
 
 /*
+ * si4060_set_filter
+ *
+ * writes the bandpass filter coefficients into the Si4060. these realize a low pass filter for 
+ * harmonics of the square wave modulation waveform and a high pass filter for the 
+ * APRS preemphasis.
+ *
+ */
+void si4060_set_filter(void) {
+	//uint8_t coeff[9] = {0x1d, 0xe5, 0xb8, 0xaa, 0xc0, 0xf5, 0x36, 0x6b, 0x7f};	// 6dB@1200 Hz, 2400 Hz
+	//uint8_t coeff[9] = {0x07, 0xde, 0xbf, 0xb9, 0xd4, 0x05, 0x40, 0x6d, 0x7f};	// 3db@1200 Hz, 2400 Hz
+	//uint8_t coeff[9] = {0xfa, 0xe5, 0xd8, 0xde, 0xf8, 0x21, 0x4f, 0x71, 0x7f};	// LP only, 2400 Hz
+	//uint8_t coeff[9] = {0xd9, 0xf1, 0x0c, 0x29, 0x44, 0x5d, 0x70, 0x7c, 0x7f}; 	// LP only, 4800 Hz
+	//uint8_t coeff[9] = {0xd5, 0xe9, 0x03, 0x20, 0x3d, 0x58, 0x6d, 0x7a, 0x7f}; 	// LP only, 4400 Hz
+	uint8_t coeff[9] = {0x81, 0x9f, 0xc4, 0xee, 0x18, 0x3e, 0x5c, 0x70, 0x76};	// 6dB@1200Hz, 4400 Hz (bad stopband)
+
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_8,
+			coeff[8]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_7,
+			coeff[7]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_6,
+			coeff[6]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_5,
+			coeff[5]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_4,
+			coeff[4]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_3,
+			coeff[3]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_2,
+			coeff[2]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_1,
+			coeff[1]);
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_TX_FILTER_COEFF_0,
+			coeff[0]);
+}
+
+/*
  * si4060_setup
  *
  * initializes the Si4060 by setting all neccesary internal registers.
@@ -404,11 +448,8 @@ void si4060_setup(uint8_t mod_type) {
 			GLOBAL_XO_TUNE,
 			0x00);
 #endif
-	si4060_set_property_8(PROP_GLOBAL,
-			GLOBAL_CLK_CFG,
-			DIV_CLK_EN + DIV_CLK_SEL_2);
 	/* set up GPIOs */
-	si4060_gpio_pin_cfg(GPIO_MODE_DIV_CLK,
+	si4060_gpio_pin_cfg(GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
 			GPIO_MODE_DONOTHING,
 			PULL_CTL + GPIO_MODE_INPUT,
@@ -421,25 +462,30 @@ void si4060_setup(uint8_t mod_type) {
 	si4060_set_property_8(PROP_SYNC,
 			SYNC_CONFIG,
 			SYNC_NO_XMIT);
+	/* setup the NCO modulo and oversampling mode */
+	si4060_set_property_32(PROP_MODEM,
+			MODEM_TX_NCO_MOD,
+			MOD_TX_OSR_10 | (XO_FREQ / 10));
+	/* setup the NCO data rate for APRS */
+	si4060_set_property_24(PROP_MODEM,
+			MODEM_DATA_RATE,
+			RF_MOD_APRS_SR);
 	/* use 2FSK from async GPIO0 */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_MOD_TYPE,
-			(mod_type & 0x07) | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_ASYNC);
-	/* setup frequency deviation */
-	si4060_set_property_24(PROP_MODEM,
-			MODEM_FREQ_DEV,
-			(uint32_t)FDEV);
+			(mod_type & 0x07) | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_SYNC);
 	/* set up the PA duty cycle */
 	si4060_set_property_8(PROP_PA,
 			PA_BIAS_CLKDUTY,
 			PA_BIAS_CLKDUTY_SIN_25);
-	/* set the channel step size */
-	si4060_set_property_16(PROP_FREQ_CONTROL,
-			FREQ_CONTROL_CHANNEL_STEP_SIZE,
-			(uint16_t)(2*FDEV));
+	si4060_set_filter();
 }
 
 void si4060_freq_aprs_eu(void) {
+	/* use 2GFSK from async GPIO0 */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_MOD_TYPE,
+			MOD_TYPE_2GFSK | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_SYNC);
 	/* setup divider to 24 (for 2m amateur radio band) */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
@@ -455,10 +501,18 @@ void si4060_freq_aprs_eu(void) {
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
-			SIN_OFF_2M);
+			0);
+	/* setup frequency deviation */
+	si4060_set_property_24(PROP_MODEM,
+			MODEM_FREQ_DEV,
+			(uint16_t)(2*FDEV_APRS));
 }
 
 void si4060_freq_aprs_us(void) {
+	/* use 2GFSK from async GPIO0 */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_MOD_TYPE,
+			MOD_TYPE_2GFSK | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_SYNC);
 	/* setup divider to 24 (for 2m amateur radio band) */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
@@ -474,10 +528,18 @@ void si4060_freq_aprs_us(void) {
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
-			SIN_OFF_2M);
+			0);
+	/* setup frequency deviation */
+	si4060_set_property_24(PROP_MODEM,
+			MODEM_FREQ_DEV,
+			(uint16_t)(2*FDEV_APRS));
 }
 
 void si4060_freq_aprs_cn(void) {
+	/* use 2GFSK from async GPIO0 */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_MOD_TYPE,
+			MOD_TYPE_2GFSK | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_SYNC);
 	/* setup divider to 24 (for 2m amateur radio band) */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
@@ -493,10 +555,18 @@ void si4060_freq_aprs_cn(void) {
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
-			SIN_OFF_2M);
+			0);
+	/* setup frequency deviation */
+	si4060_set_property_24(PROP_MODEM,
+			MODEM_FREQ_DEV,
+			(uint16_t)(2*FDEV_APRS));
 }
 
 void si4060_freq_2m_rtty(void) {
+	/* use 2FSK from async GPIO0 */
+	si4060_set_property_8(PROP_MODEM,
+			MODEM_MOD_TYPE,
+			MOD_TYPE_2FSK | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_ASYNC);
 	/* setup divider to 24 (for 2m-band) */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
@@ -512,6 +582,10 @@ void si4060_freq_2m_rtty(void) {
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
-			SIN_OFF_2M);
+			0);
+	/* setup frequency deviation */
+	si4060_set_property_24(PROP_MODEM,
+			MODEM_FREQ_DEV,
+			(uint16_t)(FDEV_RTTY));
 }
 

@@ -11,12 +11,13 @@
 
 #define USE_TCXO		/* TCXO connected to XOUT pin */
 #define XO_FREQ			16367600UL
-/* tlm middle frequency minus FM deviation */
-#define RF_FREQ_HZ_2M_RTTY	(144700000.0f - 2700.0f)
-#define RF_FREQ_HZ_2M_EU	(144800000.0f - 2700.0f)
-#define RF_FREQ_HZ_2M_US	(144390000.0f - 2700.0f)
-#define RF_FREQ_HZ_2M_CN	(144640000.0f - 2700.0f)
-#define RF_DEV_HZ		200.0f
+#define RF_FREQ_HZ_2M_RTTY	(144700000.0f)
+#define RF_FREQ_HZ_2M_EU	(144800000.0f)
+#define RF_FREQ_HZ_2M_US	(144390000.0f)
+#define RF_FREQ_HZ_2M_CN	(144640000.0f)
+#define RF_RTTY_DEV_HZ		200.0f
+#define RF_APRS_DEV_HZ		1300.0f
+#define RF_MOD_APRS_SR		4400
 
 #define F_INT_70CM		(2 * XO_FREQ / 8)
 #define F_INT_2M		(2 * XO_FREQ / 24)
@@ -30,7 +31,8 @@
 #define FDIV_FRAC_2M_US		((RF_FREQ_HZ_2M_US - F_INT_2M * (int)FDIV_INTE_2M_US)*((uint32_t)1 << 19)) / F_INT_2M
 #define FDIV_INTE_2M_CN		((RF_FREQ_HZ_2M_CN / F_INT_2M) - 1)
 #define FDIV_FRAC_2M_CN		((RF_FREQ_HZ_2M_CN - F_INT_2M * (int)FDIV_INTE_2M_CN)*((uint32_t)1 << 19)) / F_INT_2M
-#define FDEV			((((uint32_t)1 << 19) * OUTDIV_2M * RF_DEV_HZ)/(2*XO_FREQ))
+#define FDEV_RTTY		((((uint32_t)1 << 19) * OUTDIV_2M * RF_RTTY_DEV_HZ)/(2*XO_FREQ))
+#define FDEV_APRS		((((uint32_t)1 << 19) * OUTDIV_2M * RF_APRS_DEV_HZ)/(2*XO_FREQ))
 
 /* number of retries for SPI transmission (reading CTS) */
 #define SI_TIMEOUT		100
@@ -95,8 +97,20 @@ void si4060_freq_2m_rtty(void);
 #define SYNC_CONFIG		0x11
 /* modem properties */
 #define MODEM_MOD_TYPE		0x00
+#define MODEM_DATA_RATE		0x03
+#define MODEM_TX_NCO_MOD	0x06
 #define MODEM_FREQ_DEV		0x0a
 #define MODEM_FREQ_OFFSET	0x0d
+#define MODEM_TX_FILTER_COEFF_8 0x0f
+#define MODEM_TX_FILTER_COEFF_7 0x10
+#define MODEM_TX_FILTER_COEFF_6 0x11
+#define MODEM_TX_FILTER_COEFF_5 0x12
+#define MODEM_TX_FILTER_COEFF_4 0x13
+#define MODEM_TX_FILTER_COEFF_3 0x14
+#define MODEM_TX_FILTER_COEFF_2 0x15
+#define MODEM_TX_FILTER_COEFF_1 0x16
+#define MODEM_TX_FILTER_COEFF_0 0x17
+
 #define MODEM_CLKGEN_BAND	0x51
 /* PA properties */
 #define PA_BIAS_CLKDUTY		0x02
@@ -209,6 +223,10 @@ void si4060_freq_2m_rtty(void);
 #define MOD_GPIO_3		(0x03 << 5)
 #define MOD_DIRECT_MODE_SYNC	(0x00 << 7) /* default */
 #define MOD_DIRECT_MODE_ASYNC	(0x01 << 7)
+/* MODEM_TX_NCO_MOD values */
+#define MOD_TX_OSR_10		(0x00UL << 26)
+#define MOD_TX_OSR_20		(0x02UL << 26)
+#define MOD_TX_OSR_40		(0x01UL << 26)
 /* MODEM_CLKGEN_BAND values */
 #define SY_SEL_0		(0x00 << 3) /* low power */
 #define SY_SEL_1		(0x01 << 3) /* default */

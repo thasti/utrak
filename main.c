@@ -31,6 +31,7 @@ volatile uint16_t sec_overflows = 0;	/* overflow counter for second generation *
 volatile uint16_t tlm_tick = 0;		/* flag for slow telemetry handling (ISR -> main) */
 volatile uint16_t aprs_tick = 0;	/* flag for APRS handling (ISR -> main) */
 volatile uint16_t aprs_baud_tick = 0;	/* flag for APRS baud rate (ISR -> main) */
+volatile uint16_t aprs_bit = APRS_SPACE;
 
 /*
  * the NMEA data buffer
@@ -131,7 +132,22 @@ int main(void) {
 	gps_set_power_save();
 	gps_power_save(0);
 	gps_save_settings();
+	
 
+	/* APRS test code (for measurement of tone frequencies and spectra) */
+	/*
+	while(1) {
+		si4060_freq_aprs_eu();
+		tx_aprs();
+		if (aprs_bit == APRS_MARK) {
+			aprs_bit = APRS_SPACE;
+		} else {
+			aprs_bit = APRS_MARK;
+		}
+	}
+	*/
+	
+	
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
 	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_setup(MOD_TYPE_OOK);
@@ -190,6 +206,9 @@ int main(void) {
 					}
 				}
 				break;
+			default:
+				tlm_state = TX_RTTY;
+				break;
 		} /* switch (tlm_state) */
 	} /* while(1) */
 } /* main() */
@@ -230,8 +249,23 @@ __interrupt void USCI_A0_ISR(void)
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void TIMER0_A0_ISR (void)
 {
+	static uint16_t aprs_nco_count = 0;
+	static uint16_t aprs_bit_count = 0;
+	aprs_nco_count++;
+	aprs_bit_count++;
+	if (aprs_bit == APRS_SPACE && aprs_nco_count >= APRS_SPACE_TICKS) {
+		aprs_tick = 1;
+		aprs_nco_count = 0;
+	}
+	if (aprs_bit == APRS_MARK && aprs_nco_count >= APRS_MARK_TICKS) {
+		aprs_tick = 1;
+		aprs_nco_count = 0;
+	}
+	if (aprs_bit_count == APRS_BAUD_TICKS) {	
+		aprs_baud_tick = 1;
+		aprs_bit_count = 0;
+	}
 	TA0CCR0 += N_APRS_NCO - 1;
-	aprs_tick = 1;
 }
 
 /*
@@ -257,12 +291,11 @@ __interrupt void timera0x_handler(void)
 }
 
 /*
- * CCR1, generates APRS baud rate
+ * CCR1
  */
 __interrupt void timera0_cc1_handler(void)
 {
-		TA0CCR1 += N_APRS_BAUD - 1;
-		aprs_baud_tick = 1;
+	/* unused */
 }
 
 /*
@@ -270,29 +303,25 @@ __interrupt void timera0_cc1_handler(void)
  */
 __interrupt void timera0_cc2_handler(void)
 {
-#ifndef	TLM_DOMINOEX
-		TA0CCR2 += N_TLM;
+	static uint16_t cc2_overflow = 0;	/* CC2 has to overflow twice for one tlm period */
+	
+	TA0CCR2 += N_TLM;
+	cc2_overflow = ~cc2_overflow;
+	if (cc2_overflow) {
 		tlm_tick = 1;
 		sec_overflows++;
 		if (sec_overflows >= TLM_HZ) {
 			seconds++;
 			sec_overflows = 0;
 		}
-#endif
+	}
 }
 
 /*
- * Overflow, generates DominoEX baud rate
+ * Overflow
  */
 __interrupt void timera0_ifg_handler(void)
 {
-#ifdef TLM_DOMINOEX
-		tlm_tick = 1;
-		sec_overflows++;
-		if (sec_overflows >= TLM_HZ) {
-			seconds++;
-			sec_overflows = 0;
-		}
-#endif
+	/* unused */
 }
 
