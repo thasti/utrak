@@ -35,6 +35,7 @@ void tx_rtty(void) {
 	}
 	/* tx_buffer is ready */
 	if (tx_state == 0) {
+		si4060_setup(MOD_TYPE_2FSK);
 		si4060_start_tx(0);
 		tx_state = 1;
 		tx_buf_index = 0;

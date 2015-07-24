@@ -71,8 +71,8 @@ void hw_init(void) {
 	/* CCR0 is calculated by MATLAB script for minimum frequency error */
 	TA0CCR0 = N_APRS_NCO - 1;
 	TA0CCR2 = N_TLM - 1;
-	TA0CCTL0 = CCIE;
-	TA0CCTL2 = CCIE;
+	//TA0CCTL0 = CCIE;			/* CCTL0 enabled only when APRS is sent */
+	TA0CCTL2 = CCIE;			
 	TA0CTL = TASSEL_2 + MC_2 + TAIE;	/* SMCLK, continuous mode */
 
 	/* Enable Interrupts */
@@ -138,6 +138,24 @@ inline void serial_enable(void) {
  */
 inline void serial_disable(void) {
 	UCA0IE &= ~UCRXIE;			/* disable RX interrupt */
+}
+
+/*
+ * aprs_timer_enable 
+ *
+ * enables CC0, which runs the APRS nco 
+ */
+inline void aprs_timer_enable(void) {
+	TA0CCTL0 |= CCIE;
+}
+
+/*
+ * aprs_timer_disable
+ *
+ * disables CC0, as the APRS nco is not needed elsewhere
+ */
+inline void aprs_timer_disable(void) {
+	TA0CCTL0 &= ~CCIE;
 }
 
 

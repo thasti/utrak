@@ -199,6 +199,7 @@ uint8_t get_next_bit(void) {
 void tx_aprs(void) {
 	aprs_init();
 	serial_disable();
+	aprs_timer_enable();
 
 	/* use 2FSK mode so we can adjust the OFFSET register */
 	si4060_setup(MOD_TYPE_2GFSK);
@@ -233,6 +234,7 @@ void tx_aprs(void) {
 		}
 	} while(!finished);
 	si4060_stop_tx();
+	aprs_timer_disable();
 	serial_enable();
 }
 
