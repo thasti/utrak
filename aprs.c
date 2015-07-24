@@ -18,6 +18,8 @@ extern char tlm_lon[];
 extern char tlm_alt_ft[];
 extern char tlm_temp[];
 extern char tlm_volt[];
+extern uint16_t tlm_volt_i;
+extern int16_t tlm_temp_i;
 
 const unsigned char aprs_header[APRS_HEADER_LEN] = {
 	'A'*2, 'P'*2, 'R'*2, 'S'*2, ' '*2, ' '*2, SSID_RESC + (DST_SSID << 1),
@@ -50,8 +52,24 @@ inline void calculate_fcs(void) {
 void calculate_fcs(void) {}
 #endif
 
+/*
+ * base91_encode
+ *
+ * encodes one short value for the telemetry extension to base91
+ * does not work for positions etc. this way yet!
+ *
+ */
+void base91_encode(char *buf, uint16_t value) {
+    value = value % 8281;
+ 
+    buf[0] = 33 + (value / 91);
+    buf[1] = 33 + (value % 91);
+}
+
 inline void aprs_init(void) {
 	uint8_t i;
+	int16_t temp_aprs = 0;
+	static uint16_t aprs_seqnum = 0;
 	aprs_state = SM_INIT;
 	finished = 0;
 	bitcnt = 8;
@@ -73,12 +91,13 @@ inline void aprs_init(void) {
 	} else {
 		aprs_buf[APRS_LON_START + APRS_LON_LEN] = 'W';
 	}
-	for (i = 0; i < APRS_TEMP_LEN; i++) {
-		aprs_buf[APRS_TEMP_START + i] = tlm_temp[i];
-	}
-	for (i = 0; i < APRS_VOLT_LEN; i++) {
-		aprs_buf[APRS_VOLT_START + i] = tlm_volt[i];
-	}
+
+	aprs_seqnum = (aprs_seqnum + 1) % 8281;
+	temp_aprs = tlm_temp_i + APRS_TLM_TEMP_OFFSET;
+
+	base91_encode(&aprs_buf[APRS_SEQ_START], aprs_seqnum);
+	base91_encode(&aprs_buf[APRS_TEMP_START], (uint16_t)temp_aprs);
+	base91_encode(&aprs_buf[APRS_VOLT_START], tlm_volt_i);
 	
 	calculate_fcs();
 }

@@ -21,7 +21,9 @@ extern uint8_t tlm_alt_length;
 extern char tlm_alt[ALT_LENGTH_MAX];
 extern char tlm_sat[SAT_LENGTH];
 extern char tlm_volt[VOLT_LENGTH];
+extern uint16_t tlm_volt_i;
 extern char tlm_temp[TEMP_LENGTH+1];
+extern int16_t tlm_temp_i;
 
 uint16_t tlm_sent_id_length;
 uint16_t sent_id = 0;			/* sentence id */
@@ -104,9 +106,17 @@ void prepare_tx_buffer(void) {
 
 	sent_id++;
 	tlm_sent_id_length = i16toav(sent_id, tlm_sent_id);
+	temp = get_die_temperature();
 	voltage = get_battery_voltage();
 	i16toa(voltage, VOLT_LENGTH, tlm_volt);
-	temp = get_die_temperature();
+
+	if (temp > 100) {
+		temp = 0;
+	}
+
+	tlm_temp_i = temp;
+	tlm_volt_i = voltage;
+
 	if (temp < 0) {
 		tlm_temp[0] = '-';
 		temp = 0 - temp;

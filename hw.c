@@ -175,7 +175,7 @@ uint16_t get_battery_voltage(void) {
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
 	ADC10MCTL0 = ADC10INCH_2;		/* A1 ADC input select; Vref=AVCC */
 	ADC10IE = ADC10IE0;			/* Enable ADC conv complete interrupt */
-	__delay_cycles(5000);			/* Delay for Ref to settle */
+	__delay_cycles(20000);			/* Delay for Ref to settle */
 	voltage = 0;
 	for (i = 0; i < 10; i++) {
 		ADC10CTL0 |= ADC10ENC + ADC10SC;	/* Sampling and conversion start */
@@ -202,7 +202,7 @@ int16_t get_die_temperature(void) {
 
 	/* enable ADC */
 	// Configure ADC10 - Pulse sample mode; ADC10SC trigger
-	ADC10CTL0 = ADC10SHT_8 + ADC10ON;	/* 16 ADC10CLKs; ADC ON,temperature sample period>30us */
+	ADC10CTL0 = ADC10SHT_15 + ADC10ON;	/* 16 ADC10CLKs; ADC ON,temperature sample period>30us */
 	ADC10CTL1 = ADC10SHP + ADC10SSEL0 + ADC10SSEL1;	/* s/w trig, single ch/conv */
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
 	ADC10MCTL0 = ADC10SREF_1 + ADC10INCH_10;/* ADC input ch A10 => temp sense */
@@ -212,7 +212,7 @@ int16_t get_die_temperature(void) {
 	while(REFCTL0 & REFGENBUSY);		/* If ref generator busy, WAIT */
 	REFCTL0 |= REFVSEL_0+REFON;		/* Select internal ref = 1.5V */
 
-	__delay_cycles(400);			/* Delay for Ref to settle */
+	__delay_cycles(1000);			/* Delay for Ref to settle */
 
 	/* take ADC reading */
 	ADC10CTL0 |= ADC10ENC + ADC10SC;        /* Sampling and conversion start */

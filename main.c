@@ -55,7 +55,7 @@ char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the act
  * contains ASCII data
  */
 uint16_t aprs_buf_len = APRS_BUF_LEN;
-char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx T=xxx V=xxxx " APRS_COMMENT;
+char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx |ss0011|";
 
 /*
  * GPS fix data and data for tlm string
@@ -70,7 +70,9 @@ char tlm_alt[ALT_LENGTH_MAX] = { 0 };
 char tlm_alt_ft[APRS_ALT_LEN] = { 0 };
 char tlm_sat[SAT_LENGTH] = { 0 };
 char tlm_volt[VOLT_LENGTH] = { 0 };
+uint16_t tlm_volt_i = 0;
 char tlm_temp[TEMP_LENGTH+1] = { 0 };
+int16_t tlm_temp_i = 0;
 
 /*
  * uart_process

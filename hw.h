@@ -11,6 +11,6 @@ void serial_disable(void);
 void aprs_timer_enable(void);
 void aprs_timer_disable(void);
 uint16_t get_battery_voltage(void);
-uint16_t get_die_temperature(void);
+int16_t get_die_temperature(void);
 
 #endif

@@ -37,10 +37,11 @@ void aprs_init(void);
 #define SSID_RESC	0x60
 #define HEADER_END	0x01
 
-#define APRS_COMMENT	PAYLOAD_NAME
+#define APRS_TLM_TEMP_OFFSET	512
+
 /*
  * buffer length
- * example: !5055.41N/01152.76EO/A=001029 T=AAA V=BBBB uTrak 0x07
+ * example: !5055.41N/01152.76EO/A=001029 |ss0011|
  * 1 = symbol table
  * 8 = LAT_LEN + 1 (N/S)
  * 1 = symbol code
@@ -54,7 +55,7 @@ void aprs_init(void);
  * 1 = space
  * APRS comment 
  */
-#define APRS_BUF_LEN	1 + 8 + 1 + 9 + 2 + 8 + 1 + 5 + 1 + 6 + 1 + sizeof(APRS_COMMENT) - 1
+#define APRS_BUF_LEN	1 + 8 + 1 + 9 + 2 + 8 + 1 + 1 + 2 + 2 + 2 + 1
 
 #define APRS_LAT_START	1
 #define APRS_LAT_LEN	7
@@ -62,10 +63,12 @@ void aprs_init(void);
 #define APRS_LON_LEN	8
 #define APRS_ALT_START	23
 #define APRS_ALT_LEN	6
-#define APRS_TEMP_START	32
-#define APRS_TEMP_LEN	3
-#define APRS_VOLT_START	38
-#define APRS_VOLT_LEN	4
+#define APRS_SEQ_START	31
+#define APRS_SEQ_LEN	1
+#define APRS_TEMP_START	33
+#define APRS_TEMP_LEN	1
+#define APRS_VOLT_START	35
+#define APRS_VOLT_LEN	1
 
 #define AX25_SFLAGS	75
 #define AX25_EFLAGS	2
