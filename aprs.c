@@ -8,11 +8,15 @@
 #include <inttypes.h>
 #include "aprs.h"
 
+/*
+ * the APRS data buffer
+ * contains ASCII data
+ */
+char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx |ss0011|";
+
 extern volatile uint16_t aprs_bit;
 extern volatile uint16_t aprs_tick;
 extern volatile uint16_t aprs_baud_tick;
-extern uint16_t aprs_buf_len;
-extern char aprs_buf[APRS_BUF_LEN];
 extern char tlm_lat[];
 extern char tlm_lon[];
 extern char tlm_alt_ft[];

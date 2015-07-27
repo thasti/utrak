@@ -24,15 +24,25 @@
  */
 
 /*
- * housekeeping variables
+ * housekeeping and interrupt communication variables
+ *
+ * tick flags are set by ISRs and reset by the main software
  */
 volatile uint16_t seconds = 0;		/* timekeeping via timer */
-volatile uint16_t sec_overflows = 0;	/* overflow counter for second generation */
 volatile uint16_t tlm_tick = 0;		/* flag for slow telemetry handling (ISR -> main) */
 volatile uint16_t aprs_tick = 0;	/* flag for APRS handling (ISR -> main) */
 volatile uint16_t aprs_baud_tick = 0;	/* flag for APRS baud rate (ISR -> main) */
-volatile uint16_t aprs_bit = APRS_SPACE;
+volatile uint16_t aprs_bit = APRS_SPACE;/* the currently transmitted tone frequency (main -> ISR) */
 
+/*
+ * the TX data buffer
+ * contains ASCII data, which is either transmitted as CW oder RTTY
+ */
+uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
+uint16_t tx_buf_length = 0;			/* how many chars to send */
+char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the actual buffer */
+
+/* TODO remove */
 /*
  * the NMEA data buffer
  * it was confirmed that the Linx RXM-GPS-RM sticks to the standard
@@ -40,22 +50,6 @@ volatile uint16_t aprs_bit = APRS_SPACE;
 volatile uint16_t nmea_buf_index = 0;	/* the index for writing to the buffer */
 volatile uint16_t nmea_buf_rdy = 0;	/* the ready-flag (ISR -> main) */
 volatile char nmea_buf[NMEA_BUF_SIZE] = { 0 };	/* the actual buffer */
-
-/*
- * the TX data buffer
- * contains ASCII data, which is either transmitted as CW oder RTTY
- */
-uint16_t tx_buf_index = 0;			/* the index for reading from the buffer */
-uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
-uint16_t tx_buf_length = 0;			/* how many chars to send */
-char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the actual buffer */
-
-/*
- * the APRS data buffer
- * contains ASCII data
- */
-uint16_t aprs_buf_len = APRS_BUF_LEN;
-char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx |ss0011|";
 
 /*
  * GPS fix data and data for tlm string
@@ -99,6 +93,7 @@ uint8_t uart_process(void) {
 	}
 	return i;
 }
+/* TODO end of remove */
 
 int main(void) {
 	uint16_t fix_sats = 0;
@@ -305,6 +300,7 @@ __interrupt void timera0_cc1_handler(void)
  */
 __interrupt void timera0_cc2_handler(void)
 {
+	static uint16_t sec_overflows = 0;	/* overflow counter for second generation */
 	static uint16_t cc2_overflow = 0;	/* CC2 has to overflow twice for one tlm period */
 	
 	TA0CCR2 += N_TLM;

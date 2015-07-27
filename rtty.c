@@ -8,7 +8,6 @@
 
 extern volatile uint16_t tlm_tick;
 extern uint16_t tx_buf_rdy;
-extern uint16_t tx_buf_index;
 extern uint16_t tx_buf_length;
 extern char tx_buf[TX_BUF_MAX_LENGTH];
 
@@ -26,6 +25,7 @@ void tx_rtty(void) {
 	static uint16_t char_state = IDLE;
 	static uint8_t data = 0;
 	static uint16_t i = 0;
+	static uint16_t tx_buf_index = 0;	/* the index for reading from the buffer */
 	if (!tx_buf_rdy) {
 		if (tx_state == 1) {
 			si4060_stop_tx();
@@ -80,7 +80,7 @@ void tx_rtty(void) {
 			i = 0;
 			char_state = START;
 			tx_buf_index++;
-			if (tx_buf_index >= (tx_buf_length)) {
+			if (tx_buf_index >= tx_buf_length) {
 				char_state = IDLE;
 				tx_buf_rdy = 0;
 			}

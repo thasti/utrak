@@ -9,7 +9,6 @@
 
 extern volatile uint16_t tlm_tick;
 extern uint16_t tx_buf_rdy;
-extern uint16_t tx_buf_index;
 extern uint16_t tx_buf_length;
 extern char tx_buf[TX_BUF_MAX_LENGTH];
 
