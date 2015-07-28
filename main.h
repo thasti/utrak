@@ -13,6 +13,7 @@
 /* payload telemetry interval */
 #define TLM_APRS_INTERVAL	90
 #define TLM_RTTY_INTERVAL	30
+#define BLIP_FIX_INTERVAL	1
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
 /* telemetry string postfix for tlm parser */
@@ -22,6 +23,11 @@
 #define NUM_IDLE_BITS	32
 
 /* length of non-GPS-telemetry fields */
+#define LAT_LENGTH		9
+#define LON_LENGTH		10
+#define TIME_LENGTH		6
+#define SAT_LENGTH		2
+#define ALT_LENGTH_MAX		5
 #define VOLT_LENGTH		4
 #define TEMP_LENGTH		2
 #define CHECKSUM_LENGTH		4

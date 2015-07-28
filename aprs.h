@@ -41,33 +41,31 @@ void aprs_init(void);
 
 /*
  * buffer length
- * example: !5055.41N/01152.76EO/A=001029 |ss0011|
- * 1 = symbol table
- * 8 = LAT_LEN + 1 (N/S)
- * 1 = symbol code
- * 9 = LON_LEN + 1 (E/W)
- * 2 = O/
- * 8 = A=001029 (feet)
- * 1 = space
- * 5 = T=temperature (including sign)
- * 1 = space
- * 6 = V=voltage (in mV)
- * 1 = space
- * APRS comment 
+ * example: !/xxxxyyyyO   A=zzzzzz |ss0011|
+ * 1 symbol table
+ * 4 lat
+ * 4 lon
+ * 1 symbol
+ * 3 compressed alt + indicator
+ * 1 tlm delimiter
+ * 2 tlm sequence id
+ * 2 tlm temperature
+ * 2 tlm battery
+ * 1 tlm delimiter
  */
-#define APRS_BUF_LEN	1 + 8 + 1 + 9 + 2 + 8 + 1 + 1 + 2 + 2 + 2 + 1
+#define APRS_BUF_LEN	2 + 4 + 4 + 1 + 3 + 1 + 2 + 2 + 2 + 1
 
-#define APRS_LAT_START	1
-#define APRS_LAT_LEN	7
-#define APRS_LON_START	10
-#define APRS_LON_LEN	8
-#define APRS_ALT_START	23
-#define APRS_ALT_LEN	6
-#define APRS_SEQ_START	31
+#define APRS_LAT_START	2
+#define APRS_LAT_LEN	4
+#define APRS_LON_START	6
+#define APRS_LON_LEN	4
+#define APRS_ALT_START	11
+#define APRS_ALT_LEN	2
+#define APRS_SEQ_START	15
 #define APRS_SEQ_LEN	1
-#define APRS_TEMP_START	33
+#define APRS_TEMP_START	17
 #define APRS_TEMP_LEN	1
-#define APRS_VOLT_START	35
+#define APRS_VOLT_START	19
 #define APRS_VOLT_LEN	1
 
 #define AX25_SFLAGS	75

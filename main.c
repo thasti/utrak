@@ -9,7 +9,6 @@
 #include <inttypes.h>
 #include "gps.h"
 #include "main.h"
-#include "nmea.h"
 #include "si4060.h"
 #include "spi.h"
 #include "string.h"
@@ -42,61 +41,18 @@ uint16_t tx_buf_rdy = 0;			/* the read-flag (main -> main) */
 uint16_t tx_buf_length = 0;			/* how many chars to send */
 char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the actual buffer */
 
-/* TODO remove */
-/*
- * the NMEA data buffer
- * it was confirmed that the Linx RXM-GPS-RM sticks to the standard
- */
-volatile uint16_t nmea_buf_index = 0;	/* the index for writing to the buffer */
-volatile uint16_t nmea_buf_rdy = 0;	/* the ready-flag (ISR -> main) */
-volatile char nmea_buf[NMEA_BUF_SIZE] = { 0 };	/* the actual buffer */
+/* current (latest) GPS fix and measurements */
+struct gps_fix current_fix;
+uint16_t voltage_bat;
+int16_t temperature_int;
 
-/*
- * GPS fix data and data for tlm string
- * extracted from NMEA sentences by GPS data processing
- */
-char tlm_sent_id[SENT_ID_LENGTH_MAX] = { 0 };
-char tlm_time[TIME_LENGTH] = { 0 };
-char tlm_lat[LAT_LENGTH+1] = { 0 };
-char tlm_lon[LON_LENGTH+1] = { 0 };
-uint8_t tlm_alt_length;
-char tlm_alt[ALT_LENGTH_MAX] = { 0 };
-char tlm_alt_ft[APRS_ALT_LEN] = { 0 };
-char tlm_sat[SAT_LENGTH] = { 0 };
-char tlm_volt[VOLT_LENGTH] = { 0 };
-uint16_t tlm_volt_i = 0;
-char tlm_temp[TEMP_LENGTH+1] = { 0 };
-int16_t tlm_temp_i = 0;
-
-/*
- * uart_process
- *
- * checks the UART buffer status and processes full NMEA sentences
- *
- * returns:	0 if no fix was received or the last frame was not GPGGA at all
- * 		n - the number of satellites in the last fix
- */
-uint8_t uart_process(void) {
-	uint8_t i = 0;
-	if (nmea_buf_rdy) {
-		nmea_buf_rdy = 0;
-		if (NMEA_sentence_is_GGA(nmea_buf)) {
-			if (GPGGA_has_fix(nmea_buf)) {
-				i = GPGGA_get_data(nmea_buf, tlm_lat, tlm_lon, tlm_alt, &tlm_alt_length, tlm_alt_ft, tlm_sat, tlm_time);
-				if (!i) {
-					return 0;
-				}
-				atoi8(tlm_sat, SAT_LENGTH, &i);
-				return i;
-			}
-		}
-	}
-	return i;
+void get_fix_and_measurements(void) {
+	gps_get_fix(&current_fix);
+	voltage_bat = get_battery_voltage();
+	temperature_int = get_die_temperature();
 }
-/* TODO end of remove */
 
 int main(void) {
-	uint16_t fix_sats = 0;
 	uint16_t i;
 	enum {TX_RTTY, TX_APRS} tlm_state = TX_RTTY;
 	/* set watchdog timer interval to 11 seconds */
@@ -119,18 +75,14 @@ int main(void) {
 	si4060_setup(MOD_TYPE_OOK);
 
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
-	/* wait for the GPS to boot */
 	gps_startup_delay();
-	/* tell it to use GPS only and output GGA messages on every fix */
-	gps_set_nmea();
-	gps_set_gps_only();
-	gps_set_gga_only();
-	gps_set_airborne_model();
-	gps_set_power_save();
-	gps_power_save(0);
-	gps_save_settings();
+	while(!(gps_disable_nmea_output()));
+	while(!(gps_set_gps_only()));
+	while(!(gps_set_airborne_model()));
+	while(!(gps_set_power_save()));
+	while(!(gps_power_save(0)));
+	while(!(gps_save_settings()));
 	
-
 	/* APRS test code (for measurement of tone frequencies and spectra) */
 	/*
 	while(1) {
@@ -144,20 +96,23 @@ int main(void) {
 	}
 	*/
 	
-	
 	/* power up the Si4060 and set it to OOK, for transmission of blips */
-	/* the Si4060 occasionally locks up here, the watchdog gets it back */
 	si4060_setup(MOD_TYPE_OOK);
 	si4060_freq_2m_rtty();
 	si4060_start_tx(0);
 
-	/* entering wait state */
 	/* the tracker outputs RF blips while waiting for a GPS fix */
-	while (fix_sats < 5) {
-		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
-		fix_sats = uart_process();
-		tx_blips(fix_sats);
+	while (current_fix.num_svs < 5 && current_fix.type < 3) {
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS0;
+		if (seconds > BLIP_FIX_INTERVAL) {
+			seconds = 0;
+			gps_get_fix(&current_fix);
+			tx_blips(1);
+		} else {
+			tx_blips(0);
+		}
 	}
+
 	si4060_stop_tx();
 	/* modulation from now on will be RTTY */
 	si4060_setup(MOD_TYPE_2FSK);
@@ -169,19 +124,21 @@ int main(void) {
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */
 	while(1) {
-		WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
-		uart_process();
+		WDTCTL = WDTPW + WDTCNTCL + WDTIS0;
 		
 		switch (tlm_state) {
 			case TX_RTTY:
 				if ((!tx_buf_rdy) && (seconds > TLM_RTTY_INTERVAL)) {
+					get_fix_and_measurements();
 					seconds = 0;
-					prepare_tx_buffer();
-					geofence_aprs_frequency(tlm_lat, tlm_lon);
+					if (current_fix.type > 2) {
+						prepare_tx_buffer();
+					}
+					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
 					si4060_freq_2m_rtty();
 					/* possible switchover to APRS only */
-					if (!(geofence_slow_tlm_altitude(tlm_alt, tlm_alt_length))) {
+					if (!(geofence_slow_tlm_altitude(&current_fix))) {
 						tlm_state = TX_APRS;
 						/* set the tx buffer to not ready to inhibit tx_rtty() from sending */
 						tx_buf_rdy = 0;
@@ -192,12 +149,13 @@ int main(void) {
 			case TX_APRS:
 				/* change to TX_RTTY when below 4k */
 				if (seconds > TLM_APRS_INTERVAL) {
+					get_fix_and_measurements();
 					seconds = 0;
 					prepare_tx_buffer();
-					geofence_aprs_frequency(tlm_lat, tlm_lon);
+					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
 					/* possible switchover to RTTY + APRS transmission */
-					if (geofence_slow_tlm_altitude(tlm_alt, tlm_alt_length)) {
+					if (geofence_slow_tlm_altitude(&current_fix)) {
 						tlm_state = TX_RTTY;
 						tx_buf_rdy = 0;
 					}
@@ -209,33 +167,6 @@ int main(void) {
 		} /* switch (tlm_state) */
 	} /* while(1) */
 } /* main() */
-
-/*
- * USCI A0 ISR
- *
- * USCI A is UART. RX appends incoming bytes to the NMEA buffer
- */
-#pragma vector=USCI_A0_VECTOR
-__interrupt void USCI_A0_ISR(void)
-{
-	switch(UCA0IV) {
-		case 0:						/* Vector 0 - no interrupt */
-			break;
-		case 2:						/* Vector 2 - RXIFG */
-			if (nmea_buf_index < (NMEA_BUF_SIZE - 1))
-				nmea_buf_index++;
-			if (UCA0RXBUF == '$')
-				nmea_buf_index = 0;
-			if (UCA0RXBUF == '\n')
-				nmea_buf_rdy = 1;
-			nmea_buf[nmea_buf_index] = UCA0RXBUF;
-			break;
-		case 4:						/* Vector 4 - TXIFG */
-			break;
-		default:
-			break;
-	}
-}
 
 /*
  * Timer0 A0 ISR

@@ -6,24 +6,23 @@
 #endif
 
 #include <inttypes.h>
+#include <math.h>
 #include "aprs.h"
+#include "fix.h"
+#include "string.h"
 
 /*
  * the APRS data buffer
  * contains ASCII data
  */
-char aprs_buf[APRS_BUF_LEN] = "!xxxxxxxx/xxxxxxxxxO/A=xxxxxx |ss0011|";
+char aprs_buf[APRS_BUF_LEN] = "!/xxxxyyyyOaa1|ss0011|";
 
 extern volatile uint16_t aprs_bit;
 extern volatile uint16_t aprs_tick;
 extern volatile uint16_t aprs_baud_tick;
-extern char tlm_lat[];
-extern char tlm_lon[];
-extern char tlm_alt_ft[];
-extern char tlm_temp[];
-extern char tlm_volt[];
-extern uint16_t tlm_volt_i;
-extern int16_t tlm_temp_i;
+extern struct gps_fix current_fix;
+extern uint16_t voltage_bat;
+extern int16_t temperature_int;
 
 const unsigned char aprs_header[APRS_HEADER_LEN] = {
 	'A'*2, 'P'*2, 'R'*2, 'S'*2, ' '*2, ' '*2, SSID_RESC + (DST_SSID << 1),
@@ -38,6 +37,7 @@ volatile uint8_t bitcnt = 8;
 volatile uint8_t onecnt = 0;
 volatile uint8_t finished = 0;
 volatile uint8_t stuffing = 0;
+
 
 #ifndef TEST
 inline void calculate_fcs(void) {
@@ -63,15 +63,23 @@ void calculate_fcs(void) {}
  * does not work for positions etc. this way yet!
  *
  */
-void base91_encode(char *buf, uint16_t value) {
+void base91_encode_tlm(char *buf, uint16_t value) {
     value = value % 8281;
  
     buf[0] = 33 + (value / 91);
     buf[1] = 33 + (value % 91);
 }
 
+void base91_encode_latlon(char *buf, uint32_t value) {
+    buf[0] = 33 + (value / ((uint32_t)91*91*91));
+    value = value % ((uint32_t)91*91*91);
+    buf[1] = 33 + (value / (91*91));
+    value = value % (91*91);
+    buf[2] = 33 + (value / 91);
+    buf[3] = 33 + (value % 91);
+}
+
 inline void aprs_init(void) {
-	uint8_t i;
 	int16_t temp_aprs = 0;
 	static uint16_t aprs_seqnum = 0;
 	aprs_state = SM_INIT;
@@ -79,29 +87,16 @@ inline void aprs_init(void) {
 	bitcnt = 8;
 	onecnt = 0;
 	stuffing = 0;
-	for (i = 0; i < APRS_LAT_LEN; i++)
-		aprs_buf[APRS_LAT_START + i] = tlm_lat[i+1];
-	for (i = 0; i < APRS_LON_LEN; i++)
-		aprs_buf[APRS_LON_START + i] = tlm_lon[i+1];
-	for (i = 0; i < APRS_ALT_LEN; i++)
-		aprs_buf[APRS_ALT_START + i] = tlm_alt_ft[i];
-	if (tlm_lat[0] == '+') {
-		aprs_buf[APRS_LAT_START + APRS_LAT_LEN] = 'N';
-	} else {
-		aprs_buf[APRS_LAT_START + APRS_LAT_LEN] = 'S';
-	}
-	if (tlm_lon[0] == '+') {
-		aprs_buf[APRS_LON_START + APRS_LON_LEN] = 'E';
-	} else {
-		aprs_buf[APRS_LON_START + APRS_LON_LEN] = 'W';
-	}
-
+	base91_encode_latlon(&aprs_buf[APRS_LAT_START], 380926.0f * (90.0f - (float)current_fix.lat/10000000.0f));
+	base91_encode_latlon(&aprs_buf[APRS_LON_START], 190463.0f * (180.0f + (float)current_fix.lon/10000000.0f));
+	base91_encode_tlm(&aprs_buf[APRS_ALT_START], logf((float)current_fix.alt * 3.28f)/logf(1.002f));
+	
 	aprs_seqnum = (aprs_seqnum + 1) % 8281;
-	temp_aprs = tlm_temp_i + APRS_TLM_TEMP_OFFSET;
+	temp_aprs = temperature_int + APRS_TLM_TEMP_OFFSET;
 
-	base91_encode(&aprs_buf[APRS_SEQ_START], aprs_seqnum);
-	base91_encode(&aprs_buf[APRS_TEMP_START], (uint16_t)temp_aprs);
-	base91_encode(&aprs_buf[APRS_VOLT_START], tlm_volt_i);
+	base91_encode_tlm(&aprs_buf[APRS_SEQ_START], aprs_seqnum);
+	base91_encode_tlm(&aprs_buf[APRS_TEMP_START], (uint16_t)temp_aprs);
+	base91_encode_tlm(&aprs_buf[APRS_VOLT_START], voltage_bat);
 	
 	calculate_fcs();
 }
@@ -221,7 +216,6 @@ uint8_t get_next_bit(void) {
  */
 void tx_aprs(void) {
 	aprs_init();
-	serial_disable();
 	aprs_timer_enable();
 
 	/* use 2FSK mode so we can adjust the OFFSET register */
@@ -258,7 +252,6 @@ void tx_aprs(void) {
 	} while(!finished);
 	si4060_stop_tx();
 	aprs_timer_disable();
-	serial_enable();
 }
 
 #endif

@@ -1,6 +1,5 @@
 #include <inttypes.h>
 #include <msp430.h>
-#include "nmea.h"
 #include "tlm.h"
 #include "main.h"
 #include "rtty.h"

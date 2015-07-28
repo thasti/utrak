@@ -6,8 +6,6 @@
 void hw_init(void);
 void enable_xt1(void);
 void disable_xt1(void);
-void serial_enable(void);
-void serial_disable(void);
 void aprs_timer_enable(void);
 void aprs_timer_disable(void);
 uint16_t get_battery_voltage(void);

@@ -2,30 +2,24 @@
 #include <inttypes.h>
 #include "main.h"
 #include "tlm.h"
-#include "nmea.h"
 #include "si4060.h"
 #include "hw.h"
 #include "string.h"
+#include "fix.h"
+
+/* calculated sentence ID length, used for variable length buffer */
+uint16_t tlm_sent_id_length;
+uint16_t tlm_alt_length;
 
 extern volatile uint16_t tlm_tick;
 extern uint16_t tx_buf_rdy;
 extern uint16_t tx_buf_length;
 extern char tx_buf[TX_BUF_MAX_LENGTH];
 
-extern char tlm_sent_id[SENT_ID_LENGTH_MAX];
-extern char tlm_time[TIME_LENGTH];
-extern char tlm_lat[LAT_LENGTH+1];
-extern char tlm_lon[LON_LENGTH+1];
-extern uint8_t tlm_alt_length;
-extern char tlm_alt[ALT_LENGTH_MAX];
-extern char tlm_sat[SAT_LENGTH];
-extern char tlm_volt[VOLT_LENGTH];
-extern uint16_t tlm_volt_i;
-extern char tlm_temp[TEMP_LENGTH+1];
-extern int16_t tlm_temp_i;
+extern struct gps_fix current_fix;
 
-uint16_t tlm_sent_id_length;
-uint16_t sent_id = 0;			/* sentence id */
+extern uint16_t voltage_bat;
+extern int16_t temperature_int;
 
 /*
  * tx_blips
@@ -33,10 +27,14 @@ uint16_t sent_id = 0;			/* sentence id */
  * when called periodically (fast enough), transmits blips with ratio 1:5
  * checks the timer-tick flag for timing
  *
- * blips slow when no fix is available, and fast if fix is available but not enough sats
  */
-void tx_blips(uint8_t sats) {
+void tx_blips(uint8_t reset) {
 	static uint8_t count = 0;	/* keeps track of blip state */
+
+	if (reset) {
+		count = 0;
+		return;
+	}
 
 	if (!tlm_tick)
 		return;
@@ -51,16 +49,7 @@ void tx_blips(uint8_t sats) {
 		case 1+BLIP_FACTOR:
 			P1OUT &= ~SI_DATA;
 			P1OUT &= ~LED_A;
-			break;
-		case 6*BLIP_FACTOR:
-			if (sats != 0) {
-				count = 0;
-			}
-			break;
-		case 10*BLIP_FACTOR:
-			count = 0;
-			break;
-		default:
+			count--;
 			break;
 	}
 }
@@ -98,56 +87,68 @@ uint16_t calculate_txbuf_checksum(void) {
  * - MSP430 temperature
  */
 void prepare_tx_buffer(void) {
+	static uint16_t sent_id = 0;
 	int i;
 	uint16_t crc;
-	int16_t temp;
-	uint16_t voltage;
 
 	sent_id++;
-	tlm_sent_id_length = i16toav(sent_id, tlm_sent_id);
-	temp = get_die_temperature();
-	voltage = get_battery_voltage();
-	i16toa(voltage, VOLT_LENGTH, tlm_volt);
+	tlm_sent_id_length = i16toav(sent_id, &tx_buf[TX_BUF_SENT_ID_START]);
+	tx_buf[TX_BUF_SENT_ID_START + tlm_sent_id_length] = ',';
 
-	if (temp > 100) {
-		temp = 0;
-	}
-
-	tlm_temp_i = temp;
-	tlm_volt_i = voltage;
-
-	if (temp < 0) {
-		tlm_temp[0] = '-';
-		temp = 0 - temp;
+	i16toa(current_fix.hour, 2, &tx_buf[TX_BUF_TIME_START]);
+	i16toa(current_fix.min, 2, &tx_buf[TX_BUF_TIME_START + 2]);
+	i16toa(current_fix.sec, 2, &tx_buf[TX_BUF_TIME_START + 4]);
+	tx_buf[TX_BUF_TIME_START + TIME_LENGTH] = ',';
+	
+	if (current_fix.lat > 0) {
+		tx_buf[TX_BUF_LAT_START] = '+';
+		i32toa(current_fix.lat, 9, &tx_buf[TX_BUF_LAT_START + 1]);
 	} else {
-		tlm_temp[0] = '+';
+		tx_buf[TX_BUF_LAT_START] = '-';
+		i32toa(0 - current_fix.lat, 9, &tx_buf[TX_BUF_LAT_START + 1]);
 	}
-	i16toa(temp, TEMP_LENGTH, tlm_temp + 1);
+	/* copy fraction of degrees one character towards the end, insert dot */
+	/* 012XXXXXX -> 012 XXXXXX */
+	for (i = 8; i >= 3; i--) {
+		tx_buf[TX_BUF_LAT_START + i + 1] = tx_buf[TX_BUF_LAT_START + i];	
+	}
+	tx_buf[TX_BUF_LAT_START + 3] = '.';
+	tx_buf[TX_BUF_LAT_START + LAT_LENGTH + 1] = ',';
 
-	for (i = 0; i < tlm_sent_id_length; i++)
-		tx_buf[TX_BUF_SENT_ID_START + i] = tlm_sent_id[i];
-	tx_buf[TX_BUF_SENT_ID_START + i] = ',';
-	for (i = 0; i < TIME_LENGTH; i++)
-		tx_buf[TX_BUF_TIME_START + i] = tlm_time[i];
-	tx_buf[TX_BUF_TIME_START + i] = ',';
-	for (i = 0; i < LAT_LENGTH + 1; i++)
-		tx_buf[TX_BUF_LAT_START + i] = tlm_lat[i];
-	tx_buf[TX_BUF_LAT_START + i] = ',';
-	for (i = 0; i < LON_LENGTH + 1; i++)
-		tx_buf[TX_BUF_LON_START + i] = tlm_lon[i];
-	tx_buf[TX_BUF_LON_START + i] = ',';
-	for (i = 0; i < tlm_alt_length; i++)
-		tx_buf[TX_BUF_ALT_START + i] = tlm_alt[i];
-	tx_buf[TX_BUF_ALT_START + i] = ',';
-	for (i = 0; i < SAT_LENGTH; i++)
-		tx_buf[TX_BUF_SAT_START + i] = tlm_sat[i];
-	tx_buf[TX_BUF_SAT_START + i] = ',';
-	for (i = 0; i < VOLT_LENGTH; i++)
-		tx_buf[TX_BUF_VOLT_START + i] = tlm_volt[i];
-	tx_buf[TX_BUF_VOLT_START + i] = ',';
-	for (i = 0; i < TEMP_LENGTH + 1; i++)
-		tx_buf[TX_BUF_TEMP_START + i] = tlm_temp[i];
-	tx_buf[TX_BUF_TEMP_START + i] = '*';
+	if (current_fix.lon > 0) {
+		tx_buf[TX_BUF_LON_START] = '+';
+		i32toa(current_fix.lon, 10, &tx_buf[TX_BUF_LON_START + 1]);
+	} else {
+		tx_buf[TX_BUF_LON_START] = '-';
+		i32toa(0 - current_fix.lon, 10, &tx_buf[TX_BUF_LON_START + 1]);
+	}
+	/* copy fraction of degrees one character towards the end, insert dot */
+	/* 51XXXXXX -> 51 XXXXXX */
+	for (i = 9; i >= 4; i--) {
+		tx_buf[TX_BUF_LON_START + i + 1] = tx_buf[TX_BUF_LON_START + i];	
+	}
+	tx_buf[TX_BUF_LON_START + 4] = '.';
+	tx_buf[TX_BUF_LON_START + LON_LENGTH + 1] = ',';
+	
+	tlm_alt_length = i16toav(current_fix.alt, &tx_buf[TX_BUF_ALT_START]);
+	tx_buf[TX_BUF_ALT_START + tlm_alt_length] = ',';
+	
+	i16toa(current_fix.num_svs, SAT_LENGTH, &tx_buf[TX_BUF_SAT_START]);
+	tx_buf[TX_BUF_SAT_START + SAT_LENGTH] = ',';
+	
+	i16toa(voltage_bat, VOLT_LENGTH, &tx_buf[TX_BUF_VOLT_START]);
+	tx_buf[TX_BUF_VOLT_START + VOLT_LENGTH] = ',';
+
+	if (temperature_int < 0) {
+		tx_buf[TX_BUF_TEMP_START] = '-';
+		i16toa(0 - temperature_int, TEMP_LENGTH, &tx_buf[TX_BUF_TEMP_START + 1]);
+	} else {
+		tx_buf[TX_BUF_TEMP_START] = '+';
+		i16toa(temperature_int, TEMP_LENGTH, &tx_buf[TX_BUF_TEMP_START + 1]);
+	}
+	
+	tx_buf[TX_BUF_TEMP_START + TEMP_LENGTH + 1] = '*';
+
 	crc = calculate_txbuf_checksum();
 	i16tox(crc, &tx_buf[TX_BUF_CHECKSUM_START]);
 	for (i = 0; i < TX_BUF_POSTFIX_LENGTH; i++)

@@ -1,7 +1,7 @@
 TARGET   := main.elf
 CXXFLAGS := -g -Os -Wall -mmcu=msp430fr5738
 CXX      := msp430-gcc
-LIBS     :=
+LIBS     := -lm
 EXT      := c
 BUILDDIR := build
  

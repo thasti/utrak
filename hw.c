@@ -57,7 +57,6 @@ void hw_init(void) {
 	UCA0BR1 = 0;
 	UCA0MCTLW = (0x49<<8)+(1<<4)+UCOS16;	/* set UCA0BRS(<<8) and BRF(<<4) */
 	UCA0CTL1 &= ~UCSWRST;			/* release from reset */
-	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
 
 	/* USCI_B (Si4060 SPI) init */
 	UCB0CTLW0 = UCSWRST;			/* Put state machine in reset */
@@ -122,22 +121,6 @@ void disable_xt1(void) {
 	CSCTL3 = DIVA__1 + DIVS__8 + DIVM__1;			/* divide all sources */
 	/* set the best guess UART baud rate for 8.0 MHz DCO */
 	UCA0MCTLW = (0x11<<8)+(8<<4)+UCOS16;	/* set UCA0BRS(<<8) and BRF(<<4) */
-}
-
-/* serial_enable
- *
- * enable RX interrupt. must be disabled while FM transmission (breaks timing otherwise)
- */
-inline void serial_enable(void) {
-	UCA0IE |= UCRXIE;			/* Enable RX interrupt */
-}
-
-/* serial_disable
- *
- * disable RX interrupt.
- */
-inline void serial_disable(void) {
-	UCA0IE &= ~UCRXIE;			/* disable RX interrupt */
 }
 
 /*
