@@ -352,10 +352,6 @@ void si4060_start_tx(uint8_t channel) {
 	spi_write(0x00);
 	spi_write(0x00);
 	spi_deselect();
-#ifdef TLM_DOMINOEX
-	/* enable the external oscillator */
-	enable_xt1();
-#endif
 }
 
 /*
@@ -364,10 +360,6 @@ void si4060_start_tx(uint8_t channel) {
  * makes the Si4060 stop all transmissions by transistioning to SLEEP state
  */
 void si4060_stop_tx(void) {
-#ifdef TLM_DOMINOEX
-	/* disable the external oscillator */
-	disable_xt1();
-#endif
 	si4060_change_state(STATE_SLEEP);
 }
 
