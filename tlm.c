@@ -159,6 +159,10 @@ void prepare_tx_buffer(void) {
 	tx_buf_rdy = 1;
 }
 
+void tlm_init(void) {
+	tx_buf_rdy = 1;
+}
+
 /*
  * init_tx_buffer
  *

@@ -79,14 +79,9 @@ void base91_encode_latlon(char *buf, uint32_t value) {
     buf[3] = 33 + (value % 91);
 }
 
-inline void aprs_init(void) {
+inline void aprs_prepare_buffer(void) {
 	int16_t temp_aprs = 0;
 	static uint16_t aprs_seqnum = 0;
-	aprs_state = SM_INIT;
-	finished = 0;
-	bitcnt = 8;
-	onecnt = 0;
-	stuffing = 0;
 	base91_encode_latlon(&aprs_buf[APRS_LAT_START], 380926.0f * (90.0f - (float)current_fix.lat/10000000.0f));
 	base91_encode_latlon(&aprs_buf[APRS_LON_START], 190463.0f * (180.0f + (float)current_fix.lon/10000000.0f));
 	base91_encode_tlm(&aprs_buf[APRS_ALT_START], logf((float)current_fix.alt * 3.28f)/logf(1.002f));
@@ -99,6 +94,19 @@ inline void aprs_init(void) {
 	base91_encode_tlm(&aprs_buf[APRS_VOLT_START], voltage_bat);
 	
 	calculate_fcs();
+}
+
+/* 
+ * aprs_init
+ * 
+ * prepares the state machine for transmission of the next APRS frame
+ */
+void aprs_init(void) {
+	aprs_state = SM_INIT;
+	finished = 0;
+	bitcnt = 8;
+	onecnt = 0;
+	stuffing = 0;
 }
 
 /*

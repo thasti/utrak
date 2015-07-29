@@ -2,6 +2,7 @@
 #define __aprs_h__
 
 #ifndef TEST
+void aprs_prepare_buffer(void);
 void tx_aprs(void);
 #else
 uint8_t get_next_bit(void);

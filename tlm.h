@@ -12,5 +12,6 @@
 void tx_blips(uint8_t reset);
 void init_tx_buffer(void);
 void prepare_tx_buffer(void);
+void tlm_init(void);
 
 #endif

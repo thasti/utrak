@@ -133,6 +133,7 @@ int main(void) {
 					seconds = 0;
 					if (current_fix.type > 2) {
 						prepare_tx_buffer();
+						aprs_prepare_buffer();
 					}
 					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
@@ -142,6 +143,8 @@ int main(void) {
 						tlm_state = TX_APRS;
 						/* set the tx buffer to not ready to inhibit tx_rtty() from sending */
 						tx_buf_rdy = 0;
+					} else {
+						tlm_init();	/* starts the RTTY transmission */
 					}
 				}
 				tx_rtty();
@@ -151,13 +154,15 @@ int main(void) {
 				if (seconds > TLM_APRS_INTERVAL) {
 					get_fix_and_measurements();
 					seconds = 0;
-					prepare_tx_buffer();
+					if (current_fix.type > 2) {
+						/* if no current fix is available, the old fix is transmitted again */
+						aprs_prepare_buffer();
+					}
 					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
 					/* possible switchover to RTTY + APRS transmission */
 					if (geofence_slow_tlm_altitude(&current_fix)) {
 						tlm_state = TX_RTTY;
-						tx_buf_rdy = 0;
 					}
 				}
 				break;
