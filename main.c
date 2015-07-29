@@ -48,8 +48,8 @@ int16_t temperature_int;
 
 void get_fix_and_measurements(void) {
 	gps_get_fix(&current_fix);
-	voltage_bat = get_battery_voltage();
 	temperature_int = get_die_temperature();
+	voltage_bat = get_battery_voltage();
 }
 
 int main(void) {
