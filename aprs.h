@@ -42,7 +42,9 @@ void aprs_init(void);
 
 /*
  * buffer length
- * example: !/xxxxyyyyO   A=zzzzzz |ss0011|
+ * example: /ddhhmmz/xxxxyyyyOaa1|ss0011|
+ * 1 report indicator (real time, no APRS messaging)
+ * 2 + 2 + 2 + 1: day / hour / minute / zulu time indicator
  * 1 symbol table
  * 4 lat
  * 4 lon
@@ -54,19 +56,21 @@ void aprs_init(void);
  * 2 tlm battery
  * 1 tlm delimiter
  */
-#define APRS_BUF_LEN	2 + 4 + 4 + 1 + 3 + 1 + 2 + 2 + 2 + 1
+#define APRS_BUF_LEN	1 + 7 + 1 + 4 + 4 + 1 + 3 + 1 + 2 + 2 + 2 + 1
 
-#define APRS_LAT_START	2
+#define APRS_TIME_START	1
+#define APRS_TIME_LEN	6
+#define APRS_LAT_START	9
 #define APRS_LAT_LEN	4
-#define APRS_LON_START	6
+#define APRS_LON_START	13
 #define APRS_LON_LEN	4
-#define APRS_ALT_START	11
+#define APRS_ALT_START	18
 #define APRS_ALT_LEN	2
-#define APRS_SEQ_START	15
+#define APRS_SEQ_START	22
 #define APRS_SEQ_LEN	1
-#define APRS_TEMP_START	17
+#define APRS_TEMP_START	24
 #define APRS_TEMP_LEN	1
-#define APRS_VOLT_START	19
+#define APRS_VOLT_START	26
 #define APRS_VOLT_LEN	1
 
 #define AX25_SFLAGS	75

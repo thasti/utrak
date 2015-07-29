@@ -15,7 +15,7 @@
  * the APRS data buffer
  * contains ASCII data
  */
-char aprs_buf[APRS_BUF_LEN] = "!/xxxxyyyyOaa1|ss0011|";
+char aprs_buf[APRS_BUF_LEN] = "/ddhhmmz/xxxxyyyyOaa1|ss0011|";
 
 extern volatile uint16_t aprs_bit;
 extern volatile uint16_t aprs_tick;
@@ -82,6 +82,10 @@ void base91_encode_latlon(char *buf, uint32_t value) {
 inline void aprs_prepare_buffer(void) {
 	int16_t temp_aprs = 0;
 	static uint16_t aprs_seqnum = 0;
+	i16toa(current_fix.day, 2, &aprs_buf[APRS_TIME_START]);
+	i16toa(current_fix.hour, 2, &aprs_buf[APRS_TIME_START + 2]);
+	i16toa(current_fix.min, 2, &aprs_buf[APRS_TIME_START + 4]);
+	
 	base91_encode_latlon(&aprs_buf[APRS_LAT_START], 380926.0f * (90.0f - (float)current_fix.lat/10000000.0f));
 	base91_encode_latlon(&aprs_buf[APRS_LON_START], 190463.0f * (180.0f + (float)current_fix.lon/10000000.0f));
 	base91_encode_tlm(&aprs_buf[APRS_ALT_START], logf((float)current_fix.alt * 3.28f)/logf(1.002f));
