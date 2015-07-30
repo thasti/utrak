@@ -1,8 +1,10 @@
 #ifndef __aprs_h__
 #define __aprs_h__
 
+#include "fix.h"
+
 #ifndef TEST
-void aprs_prepare_buffer(void);
+void aprs_prepare_buffer(struct gps_fix *fix);
 void tx_aprs(void);
 #else
 uint8_t get_next_bit(void);

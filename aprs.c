@@ -20,7 +20,6 @@ char aprs_buf[APRS_BUF_LEN] = "/ddhhmmz/xxxxyyyyOaa1|ss0011|";
 extern volatile uint16_t aprs_bit;
 extern volatile uint16_t aprs_tick;
 extern volatile uint16_t aprs_baud_tick;
-extern struct gps_fix current_fix;
 extern uint16_t voltage_bat;
 extern int16_t temperature_int;
 
@@ -79,16 +78,29 @@ void base91_encode_latlon(char *buf, uint32_t value) {
     buf[3] = 33 + (value % 91);
 }
 
-inline void aprs_prepare_buffer(void) {
+/* 
+ * aprs_prepare_buffer
+ *
+ * prepares the buffer for APRS transmission with the fix given as a reference.
+ * checks for validity of the fix, does not change the buffer if the fix is unsuitable for transmission.
+ *
+ * always transmits the latest temperature / battery voltage, no historical values!
+ *
+ */
+inline void aprs_prepare_buffer(struct gps_fix* fix) {
 	int16_t temp_aprs = 0;
 	static uint16_t aprs_seqnum = 0;
-	i16toa(current_fix.day, 2, &aprs_buf[APRS_TIME_START]);
-	i16toa(current_fix.hour, 2, &aprs_buf[APRS_TIME_START + 2]);
-	i16toa(current_fix.min, 2, &aprs_buf[APRS_TIME_START + 4]);
+
+	if (fix->type < 3)
+		return;
+
+	i16toa(fix->day, 2, &aprs_buf[APRS_TIME_START]);
+	i16toa(fix->hour, 2, &aprs_buf[APRS_TIME_START + 2]);
+	i16toa(fix->min, 2, &aprs_buf[APRS_TIME_START + 4]);
 	
-	base91_encode_latlon(&aprs_buf[APRS_LAT_START], 380926.0f * (90.0f - (float)current_fix.lat/10000000.0f));
-	base91_encode_latlon(&aprs_buf[APRS_LON_START], 190463.0f * (180.0f + (float)current_fix.lon/10000000.0f));
-	base91_encode_tlm(&aprs_buf[APRS_ALT_START], logf((float)current_fix.alt * 3.28f)/logf(1.002f));
+	base91_encode_latlon(&aprs_buf[APRS_LAT_START], 380926.0f * (90.0f - (float)fix->lat/10000000.0f));
+	base91_encode_latlon(&aprs_buf[APRS_LON_START], 190463.0f * (180.0f + (float)fix->lon/10000000.0f));
+	base91_encode_tlm(&aprs_buf[APRS_ALT_START], logf((float)fix->alt * 3.28f)/logf(1.002f));
 	
 	aprs_seqnum = (aprs_seqnum + 1) % 8281;
 	temp_aprs = temperature_int + APRS_TLM_TEMP_OFFSET;

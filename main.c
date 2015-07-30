@@ -17,6 +17,7 @@
 #include "tlm.h"
 #include "rtty.h"
 #include "geofence.h"
+#include "backlog.h"
 
 /*
  * GLOBAL VARIABLES
@@ -54,7 +55,10 @@ void get_fix_and_measurements(void) {
 
 int main(void) {
 	uint16_t i;
+	uint16_t backlog_transmitted = 0;
+	struct gps_fix *backlog_fix = 0;
 	enum {TX_RTTY, TX_APRS} tlm_state = TX_RTTY;
+
 	/* set watchdog timer interval to 11 seconds */
 	/* reset occurs if Si4060 does not respond or software locks up */
 	WDTCTL = WDTPW + WDTCNTCL + WDTIS1;
@@ -101,6 +105,9 @@ int main(void) {
 	si4060_freq_2m_rtty();
 	si4060_start_tx(0);
 
+	/* TODO remove before flight */
+	/*backlog_invalidate_fixes();*/
+
 	/* the tracker outputs RF blips while waiting for a GPS fix */
 	while (current_fix.num_svs < 5 && current_fix.type < 3) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS0;
@@ -128,12 +135,24 @@ int main(void) {
 		
 		switch (tlm_state) {
 			case TX_RTTY:
+				/* backlog transmission */
+				if (seconds > TLM_BACKLOG_OFFSET && backlog_transmitted == 0) {
+					backlog_fix = backlog_get_next_fix();
+					if (backlog_fix != 0) {
+						aprs_prepare_buffer(backlog_fix);
+						geofence_aprs_frequency(&current_fix);
+						tx_aprs();
+					}
+					backlog_transmitted = 1;
+				}
+				/* regular APRS transmission, start of RTTY transmission */
 				if ((!tx_buf_rdy) && (seconds > TLM_RTTY_INTERVAL)) {
 					get_fix_and_measurements();
+					backlog_add_fix(&current_fix);
 					seconds = 0;
 					if (current_fix.type > 2) {
 						prepare_tx_buffer();
-						aprs_prepare_buffer();
+						aprs_prepare_buffer(&current_fix);
 					}
 					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
@@ -146,17 +165,29 @@ int main(void) {
 					} else {
 						tlm_init();	/* starts the RTTY transmission */
 					}
+					backlog_transmitted = 0;
 				}
 				tx_rtty();
 				break;
 			case TX_APRS:
-				/* change to TX_RTTY when below 4k */
+				/* backlog transmission */
+				if (seconds > TLM_BACKLOG_OFFSET && backlog_transmitted == 0) {
+					backlog_fix = backlog_get_next_fix();
+					if (backlog_fix != 0) {
+						aprs_prepare_buffer(backlog_fix);
+						geofence_aprs_frequency(&current_fix);
+						tx_aprs();
+					}
+					backlog_transmitted = 1;
+				}
+				/* regular APRS transmission */
 				if (seconds > TLM_APRS_INTERVAL) {
 					get_fix_and_measurements();
+					backlog_add_fix(&current_fix);
 					seconds = 0;
 					if (current_fix.type > 2) {
 						/* if no current fix is available, the old fix is transmitted again */
-						aprs_prepare_buffer();
+						aprs_prepare_buffer(&current_fix);
 					}
 					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
@@ -164,6 +195,7 @@ int main(void) {
 					if (geofence_slow_tlm_altitude(&current_fix)) {
 						tlm_state = TX_RTTY;
 					}
+					backlog_transmitted = 0;
 				}
 				break;
 			default:

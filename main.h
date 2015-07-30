@@ -10,10 +10,16 @@
 
 /* payload name */
 #define PAYLOAD_NAME "0x09"
-/* payload telemetry interval */
+/* payload telemetry interval
+ * can be set for APRS only and for RTTY + APRS
+ */
 #define TLM_APRS_INTERVAL	90
-#define TLM_RTTY_INTERVAL	30
+#define TLM_RTTY_INTERVAL	40
+/* time offset for APRS backlog transmissions */
+#define TLM_BACKLOG_OFFSET	15
+/* how often a fix should be requested when transmitting blips (after power up) */
 #define BLIP_FIX_INTERVAL	1
+
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
 /* telemetry string postfix for tlm parser */
