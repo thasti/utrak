@@ -18,9 +18,6 @@ extern char tx_buf[TX_BUF_MAX_LENGTH];
 
 extern struct gps_fix current_fix;
 
-extern uint16_t voltage_bat;
-extern int16_t temperature_int;
-
 /*
  * tx_blips
  *
@@ -136,15 +133,15 @@ void prepare_tx_buffer(void) {
 	i16toa(current_fix.num_svs, SAT_LENGTH, &tx_buf[TX_BUF_SAT_START]);
 	tx_buf[TX_BUF_SAT_START + SAT_LENGTH] = ',';
 	
-	i16toa(voltage_bat, VOLT_LENGTH, &tx_buf[TX_BUF_VOLT_START]);
+	i16toa(current_fix.voltage_bat, VOLT_LENGTH, &tx_buf[TX_BUF_VOLT_START]);
 	tx_buf[TX_BUF_VOLT_START + VOLT_LENGTH] = ',';
 
-	if (temperature_int < 0) {
+	if (current_fix.temperature_int < 0) {
 		tx_buf[TX_BUF_TEMP_START] = '-';
-		i16toa(0 - temperature_int, TEMP_LENGTH, &tx_buf[TX_BUF_TEMP_START + 1]);
+		i16toa(0 - current_fix.temperature_int, TEMP_LENGTH, &tx_buf[TX_BUF_TEMP_START + 1]);
 	} else {
 		tx_buf[TX_BUF_TEMP_START] = '+';
-		i16toa(temperature_int, TEMP_LENGTH, &tx_buf[TX_BUF_TEMP_START + 1]);
+		i16toa(current_fix.temperature_int, TEMP_LENGTH, &tx_buf[TX_BUF_TEMP_START + 1]);
 	}
 	
 	tx_buf[TX_BUF_TEMP_START + TEMP_LENGTH + 1] = '*';

@@ -20,8 +20,6 @@ char aprs_buf[APRS_BUF_LEN] = "/ddhhmmz/xxxxyyyyOaa1|ss0011|";
 extern volatile uint16_t aprs_bit;
 extern volatile uint16_t aprs_tick;
 extern volatile uint16_t aprs_baud_tick;
-extern uint16_t voltage_bat;
-extern int16_t temperature_int;
 
 const unsigned char aprs_header[APRS_HEADER_LEN] = {
 	'A'*2, 'P'*2, 'R'*2, 'S'*2, ' '*2, ' '*2, SSID_RESC + (DST_SSID << 1),
@@ -103,11 +101,11 @@ inline void aprs_prepare_buffer(struct gps_fix* fix) {
 	base91_encode_tlm(&aprs_buf[APRS_ALT_START], logf((float)fix->alt * 3.28f)/logf(1.002f));
 	
 	aprs_seqnum = (aprs_seqnum + 1) % 8281;
-	temp_aprs = temperature_int + APRS_TLM_TEMP_OFFSET;
+	temp_aprs = fix->temperature_int + APRS_TLM_TEMP_OFFSET;
 
 	base91_encode_tlm(&aprs_buf[APRS_SEQ_START], aprs_seqnum);
 	base91_encode_tlm(&aprs_buf[APRS_TEMP_START], (uint16_t)temp_aprs);
-	base91_encode_tlm(&aprs_buf[APRS_VOLT_START], voltage_bat);
+	base91_encode_tlm(&aprs_buf[APRS_VOLT_START], fix->voltage_bat);
 	
 	calculate_fcs();
 }

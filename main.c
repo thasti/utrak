@@ -44,13 +44,11 @@ char tx_buf[TX_BUF_MAX_LENGTH] = {SYNC_PREFIX "$$" PAYLOAD_NAME ","};	/* the act
 
 /* current (latest) GPS fix and measurements */
 struct gps_fix current_fix;
-uint16_t voltage_bat;
-int16_t temperature_int;
 
 void get_fix_and_measurements(void) {
 	gps_get_fix(&current_fix);
-	temperature_int = get_die_temperature();
-	voltage_bat = get_battery_voltage();
+	current_fix.temperature_int = get_die_temperature();
+	current_fix.voltage_bat = get_battery_voltage();
 }
 
 int main(void) {
