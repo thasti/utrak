@@ -9,9 +9,9 @@
 
 #include <inttypes.h>
 
-extern void spi_select(void);
-extern void spi_deselect(void);
-extern uint8_t spi_write(uint8_t data);
-extern uint8_t spi_read(void);
+void spi_select(void);
+void spi_deselect(void);
+uint8_t spi_write(uint8_t data);
+uint8_t spi_read(void);
 
 #endif
