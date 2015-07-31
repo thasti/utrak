@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x09"
+#define PAYLOAD_NAME "0x0b"
 /* payload telemetry interval
  * can be set for APRS only and for RTTY + APRS
  */
@@ -89,7 +89,7 @@
 /* as some values need fine tuning to keep error in a margin and are constrained, */
 /* these should be recalculated manually when the CPU frequency is changed  */
 /* NCO is running at 26400 hz (lowest common denominator of 1200*2 and 2200*2) */
-#define N_APRS_NCO	306		/* DCO_freq / 26400 */
+#define N_APRS_NCO	305		/* DCO_freq / 26400 */
 
 #define N_TLM	40000 - 1		/* DCO_freq / TLM rate / 2 */
 #define TLM_HZ	100			/* tlm rate in Hz */
