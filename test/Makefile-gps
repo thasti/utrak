@@ -1,6 +1,0 @@
-SRC_ALL=../string.c ../nmea.c
-TEST_BIN=gps_test_pc
-
-test-pc: 
-	$(CC) -DTEST -o$(TEST_BIN) $(SRC_ALL) $(TEST_BIN).c
-
