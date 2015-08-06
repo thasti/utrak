@@ -11,10 +11,17 @@
 
 #define USE_TCXO		/* TCXO connected to XOUT pin */
 #define XO_FREQ			16367600UL
-#define RF_FREQ_HZ_2M_RTTY	(144700000.0f)
-#define RF_FREQ_HZ_2M_EU	(144800000.0f)
-#define RF_FREQ_HZ_2M_US	(144390000.0f)
-#define RF_FREQ_HZ_2M_CN	(144640000.0f)
+
+#define RF_FREQ_HZ_2M_RTTY	144700000.0f
+#define RF_FREQ_HZ_2M_EU	144800000.0f 
+#define RF_FREQ_HZ_2M_US	144390000.0f 
+#define RF_FREQ_HZ_2M_JP	144660000.0f
+#define RF_FREQ_HZ_2M_CN	144640000.0f
+#define RF_FREQ_HZ_2M_BRAZIL	145570000.0f
+#define RF_FREQ_HZ_2M_AUS	145175000.0f
+#define RF_FREQ_HZ_2M_NZ	144575000.0f
+#define RF_FREQ_HZ_2M_THAI	145525000.0f
+
 #define RF_RTTY_DEV_HZ		200.0f
 #define RF_APRS_DEV_HZ		1300.0f
 #define RF_MOD_APRS_SR		4400
@@ -23,14 +30,9 @@
 #define F_INT_2M		(2 * XO_FREQ / 24)
 #define OUTDIV_70CM		8
 #define OUTDIV_2M		24
-#define FDIV_INTE_2M_RTTY	((RF_FREQ_HZ_2M_RTTY / F_INT_2M) - 1)
-#define FDIV_FRAC_2M_RTTY	((RF_FREQ_HZ_2M_RTTY - F_INT_2M * (int)FDIV_INTE_2M_RTTY)*((uint32_t)1 << 19)) / F_INT_2M
-#define FDIV_INTE_2M_EU		((RF_FREQ_HZ_2M_EU / F_INT_2M) - 1)
-#define FDIV_FRAC_2M_EU		((RF_FREQ_HZ_2M_EU - F_INT_2M * (int)FDIV_INTE_2M_EU)*((uint32_t)1 << 19)) / F_INT_2M
-#define FDIV_INTE_2M_US		((RF_FREQ_HZ_2M_US / F_INT_2M) - 1)
-#define FDIV_FRAC_2M_US		((RF_FREQ_HZ_2M_US - F_INT_2M * (int)FDIV_INTE_2M_US)*((uint32_t)1 << 19)) / F_INT_2M
-#define FDIV_INTE_2M_CN		((RF_FREQ_HZ_2M_CN / F_INT_2M) - 1)
-#define FDIV_FRAC_2M_CN		((RF_FREQ_HZ_2M_CN - F_INT_2M * (int)FDIV_INTE_2M_CN)*((uint32_t)1 << 19)) / F_INT_2M
+
+#define FDIV_INTE_2M(freq)	((RF_FREQ_HZ_2M_ ## freq / F_INT_2M) - 1)
+#define FDIV_FRAC_2M(freq)	((RF_FREQ_HZ_2M_ ## freq - F_INT_2M * (int)FDIV_INTE_2M(freq))*((uint32_t)1 << 19)) / F_INT_2M	
 #define FDEV_RTTY		((((uint32_t)1 << 19) * OUTDIV_2M * RF_RTTY_DEV_HZ)/(2*XO_FREQ))
 #define FDEV_APRS		((((uint32_t)1 << 19) * OUTDIV_2M * RF_APRS_DEV_HZ)/(2*XO_FREQ))
 
@@ -50,9 +52,14 @@ void si4060_setup(uint8_t mod_type);
 void si4060_change_state(uint8_t state);
 uint16_t si4060_part_info(void);
 uint8_t si4060_get_cts(uint8_t read_response);
-void si4060_freq_aprs_eu(void);
-void si4060_freq_aprs_us(void);
+void si4060_freq_aprs_reg1(void);
+void si4060_freq_aprs_reg2(void);
 void si4060_freq_aprs_cn(void);
+void si4060_freq_aprs_jp(void);
+void si4060_freq_aprs_thai(void);
+void si4060_freq_aprs_nz(void);
+void si4060_freq_aprs_aus(void);
+void si4060_freq_aprs_brazil(void);
 void si4060_freq_2m_rtty(void);
 
 /* ===== command definitions ===== */

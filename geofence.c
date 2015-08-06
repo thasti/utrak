@@ -5,22 +5,54 @@
 /* 
  * geofence_aprs_frequency
  *
- * sets the si4060 APRS frequency according to the current position. uses the 
- * most simple approach currently, will be refined if needed.
+ * sets the si4060 APRS frequency according to the current position. uses a very
+ * simple approach currently, will be refined if needed.
  *
- * three zones are relevant, only longitude is looked at
- *   USA from -180 to -40 deg
- *   China from +90 to +180
- *   Europe from -40 deg to +90 (or: everywhere else, fallback)
- *
+ * the coordinates for this approach were taken from Thomas Krahn, KT5TK/DL4MDW
  */
 void geofence_aprs_frequency(struct gps_fix *fix) {
-	if (fix->lon < COORD_UBX(-40.0)) {
-		si4060_freq_aprs_us();
-	} else if (fix->lon > COORD_UBX(+90.0)) {
+	int match = 0;
+
+	if(COORD_UBX(-168.0f) < fix->lon && fix->lon < COORD_UBX(-34.0f)) {
+		si4060_freq_aprs_reg2();
+		match = 1;
+	} 
+	if(COORD_UBX(-34) <  fix->lon && fix->lon < COORD_UBX(71)) {
+		si4060_freq_aprs_reg1();
+		match = 1;
+	} 
+	if(COORD_UBX(-34.95f) < fix->lat && fix->lat < COORD_UBX(7.18f) && 
+		  COORD_UBX(-73.13f) < fix->lon && fix->lon < COORD_UBX(-26.46f)) {
+		si4060_freq_aprs_brazil();
+		match = 1;
+	}
+	if(COORD_UBX(29.38f) < fix->lat && fix->lat < COORD_UBX(47.10f) && 
+		  COORD_UBX(127.16f) < fix->lon && fix->lon < COORD_UBX(153.61f)) {
+		si4060_freq_aprs_jp();
+		match = 1;
+	}
+	if(COORD_UBX(19.06f) < fix->lat && fix->lat < COORD_UBX(53.74f) && 
+		  COORD_UBX(72.05f) < fix->lon && fix->lon < COORD_UBX(127.16f)) {
 		si4060_freq_aprs_cn();
-	} else {
-		si4060_freq_aprs_eu();
+		match = 1;
+	}
+	if(COORD_UBX(-0.30f) < fix->lat && fix->lat < COORD_UBX(20.42f) && 
+		  COORD_UBX(93.06f) < fix->lon && fix->lon < COORD_UBX(105.15f)) {
+		si4060_freq_aprs_thai();
+		match = 1;
+	}
+	if(COORD_UBX(-54.54f) < fix->lat && fix->lat < COORD_UBX(-32.43f) &&
+		  COORD_UBX(161.62f) < fix->lon && fix->lon < COORD_UBX(179.99f)) {
+		si4060_freq_aprs_nz();
+		match = 1;
+	}
+	if(COORD_UBX(-50.17f) < fix->lat && fix->lat < COORD_UBX(-8.66f) && 
+		  COORD_UBX(105.80f) < fix->lon && fix->lon < COORD_UBX(161.62f)) {
+		si4060_freq_aprs_aus();
+		match = 1;
+	}
+	if (match == 0) {
+		si4060_freq_aprs_reg1();
 	}
 }
 

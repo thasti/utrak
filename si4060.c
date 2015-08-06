@@ -473,7 +473,7 @@ void si4060_setup(uint8_t mod_type) {
 	si4060_set_filter();
 }
 
-void si4060_freq_aprs_eu(void) {
+void si4060_set_aprs_params(void) {
 	/* use 2GFSK from async GPIO0 */
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_MOD_TYPE,
@@ -482,14 +482,6 @@ void si4060_freq_aprs_eu(void) {
 	si4060_set_property_8(PROP_MODEM,
 			MODEM_CLKGEN_BAND,
 			SY_SEL_1 | FVCO_DIV_24);
-	/* set up the integer divider */
-	si4060_set_property_8(PROP_FREQ_CONTROL,
-			FREQ_CONTROL_INTE,
-			(uint8_t)(FDIV_INTE_2M_EU));
-	/* set up the fractional divider */
-	si4060_set_property_24(PROP_FREQ_CONTROL,
-			FREQ_CONTROL_FRAC,
-			(uint32_t)(FDIV_FRAC_2M_EU));
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,
@@ -500,58 +492,100 @@ void si4060_freq_aprs_eu(void) {
 			(uint16_t)(2*FDEV_APRS));
 }
 
-void si4060_freq_aprs_us(void) {
-	/* use 2GFSK from async GPIO0 */
-	si4060_set_property_8(PROP_MODEM,
-			MODEM_MOD_TYPE,
-			MOD_TYPE_2GFSK | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_SYNC);
-	/* setup divider to 24 (for 2m amateur radio band) */
-	si4060_set_property_8(PROP_MODEM,
-			MODEM_CLKGEN_BAND,
-			SY_SEL_1 | FVCO_DIV_24);
+void si4060_freq_aprs_reg1(void) {
+	si4060_set_aprs_params();
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
-			(uint8_t)(FDIV_INTE_2M_US));
+			(uint8_t)(FDIV_INTE_2M(EU)));
 	/* set up the fractional divider */
 	si4060_set_property_24(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_FRAC,
-			(uint32_t)(FDIV_FRAC_2M_US));
-	/* setup frequency deviation offset */
-	si4060_set_property_16(PROP_MODEM,
-			MODEM_FREQ_OFFSET,
-			0);
-	/* setup frequency deviation */
-	si4060_set_property_24(PROP_MODEM,
-			MODEM_FREQ_DEV,
-			(uint16_t)(2*FDEV_APRS));
+			(uint32_t)(FDIV_FRAC_2M(EU)));
+}
+
+void si4060_freq_aprs_reg2(void) {
+	si4060_set_aprs_params();
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_2M(US)));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_2M(US)));
 }
 
 void si4060_freq_aprs_cn(void) {
-	/* use 2GFSK from async GPIO0 */
-	si4060_set_property_8(PROP_MODEM,
-			MODEM_MOD_TYPE,
-			MOD_TYPE_2GFSK | MOD_SOURCE_DIRECT | MOD_GPIO_3 | MOD_DIRECT_MODE_SYNC);
-	/* setup divider to 24 (for 2m amateur radio band) */
-	si4060_set_property_8(PROP_MODEM,
-			MODEM_CLKGEN_BAND,
-			SY_SEL_1 | FVCO_DIV_24);
+	si4060_set_aprs_params();
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
-			(uint8_t)(FDIV_INTE_2M_CN));
+			(uint8_t)(FDIV_INTE_2M(CN)));
 	/* set up the fractional divider */
 	si4060_set_property_24(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_FRAC,
-			(uint32_t)(FDIV_FRAC_2M_CN));
-	/* setup frequency deviation offset */
-	si4060_set_property_16(PROP_MODEM,
-			MODEM_FREQ_OFFSET,
-			0);
-	/* setup frequency deviation */
-	si4060_set_property_24(PROP_MODEM,
-			MODEM_FREQ_DEV,
-			(uint16_t)(2*FDEV_APRS));
+			(uint32_t)(FDIV_FRAC_2M(CN)));
+}
+
+void si4060_freq_aprs_jp(void) {
+	si4060_set_aprs_params();
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_2M(JP)));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_2M(JP)));
+}
+
+void si4060_freq_aprs_thai(void) {
+	si4060_set_aprs_params();
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_2M(THAI)));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_2M(THAI)));
+}
+
+void si4060_freq_aprs_nz(void) {
+	si4060_set_aprs_params();
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_2M(NZ)));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_2M(NZ)));
+}
+
+void si4060_freq_aprs_aus(void) {
+	si4060_set_aprs_params();
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_2M(AUS)));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_2M(AUS)));
+}
+
+void si4060_freq_aprs_brazil(void) {
+	si4060_set_aprs_params();
+	/* set up the integer divider */
+	si4060_set_property_8(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_INTE,
+			(uint8_t)(FDIV_INTE_2M(BRAZIL)));
+	/* set up the fractional divider */
+	si4060_set_property_24(PROP_FREQ_CONTROL,
+			FREQ_CONTROL_FRAC,
+			(uint32_t)(FDIV_FRAC_2M(BRAZIL)));
 }
 
 void si4060_freq_2m_rtty(void) {
@@ -566,11 +600,11 @@ void si4060_freq_2m_rtty(void) {
 	/* set up the integer divider */
 	si4060_set_property_8(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_INTE,
-			(uint8_t)(FDIV_INTE_2M_RTTY));
+			(uint8_t)(FDIV_INTE_2M(RTTY)));
 	/* set up the fractional divider */
 	si4060_set_property_24(PROP_FREQ_CONTROL,
 			FREQ_CONTROL_FRAC,
-			(uint32_t)(FDIV_FRAC_2M_RTTY));
+			(uint32_t)(FDIV_FRAC_2M(RTTY)));
 	/* setup frequency deviation offset */
 	si4060_set_property_16(PROP_MODEM,
 			MODEM_FREQ_OFFSET,

@@ -4,7 +4,7 @@
 #include "fix.h"
 
 /* number of backlog fixes to save*/
-#define BACKLOG_MAX_ENTRIES	96
+#define BACKLOG_MAX_ENTRIES	72	
 /* number of backlog fixes to skip between transmissions.
  * this distributes transmitted backlog fixes more evenly, so that after long
  * out-of-range-times the history is filled in an "interleaved" fashion

@@ -104,7 +104,7 @@ int main(void) {
 	si4060_start_tx(0);
 
 	/* TODO remove before flight */
-	/*backlog_invalidate_fixes();*/
+	backlog_invalidate_fixes();
 
 	/* the tracker outputs RF blips while waiting for a GPS fix */
 	while (current_fix.num_svs < 5 && current_fix.type < 3) {
@@ -123,13 +123,14 @@ int main(void) {
 	si4060_setup(MOD_TYPE_2FSK);
 	/* activate power save mode as fix is stable */
 	gps_power_save(1);
-	seconds = TLM_RTTY_INTERVAL + 1;
+	seconds = TLM_APRS_INTERVAL + 1;
 	P1OUT &= ~LED_A;
 	/* entering operational state */
 	/* in fixed intervals, a new TX buffer is prepared and transmitted */
 	/* watchdog timer is active for resets, if somethings locks up */
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS0;
+
 #ifdef TLM_RTTY /* APRS and RTTY transmission */
 		switch (tlm_state) {
 			case TX_RTTY:
