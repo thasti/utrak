@@ -130,14 +130,14 @@ int main(void) {
 	/* watchdog timer is active for resets, if somethings locks up */
 	while(1) {
 		WDTCTL = WDTPW + WDTCNTCL + WDTIS0;
-		
+#ifdef TLM_RTTY /* APRS and RTTY transmission */
 		switch (tlm_state) {
 			case TX_RTTY:
 				/* backlog transmission */
 				if (seconds > TLM_BACKLOG_OFFSET && backlog_transmitted == 0) {
 					backlog_fix = backlog_get_next_fix();
 					if (backlog_fix != 0) {
-						aprs_prepare_buffer(backlog_fix);
+						aprs_prepare_buffer(backlog_fix, 1);
 						geofence_aprs_frequency(&current_fix);
 						tx_aprs();
 					}
@@ -150,7 +150,7 @@ int main(void) {
 					seconds = 0;
 					if (current_fix.type > 2) {
 						prepare_tx_buffer();
-						aprs_prepare_buffer(&current_fix);
+						aprs_prepare_buffer(&current_fix, 0);
 					}
 					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
@@ -172,7 +172,7 @@ int main(void) {
 				if (seconds > TLM_BACKLOG_OFFSET && backlog_transmitted == 0) {
 					backlog_fix = backlog_get_next_fix();
 					if (backlog_fix != 0) {
-						aprs_prepare_buffer(backlog_fix);
+						aprs_prepare_buffer(backlog_fix, 1);
 						geofence_aprs_frequency(&current_fix);
 						tx_aprs();
 					}
@@ -185,7 +185,7 @@ int main(void) {
 					seconds = 0;
 					if (current_fix.type > 2) {
 						/* if no current fix is available, the old fix is transmitted again */
-						aprs_prepare_buffer(&current_fix);
+						aprs_prepare_buffer(&current_fix, 0);
 					}
 					geofence_aprs_frequency(&current_fix);
 					tx_aprs();
@@ -200,6 +200,32 @@ int main(void) {
 				tlm_state = TX_RTTY;
 				break;
 		} /* switch (tlm_state) */
+
+#else	/* APRS only */
+		/* backlog transmission */
+		if (seconds > TLM_BACKLOG_OFFSET && backlog_transmitted == 0) {
+			backlog_fix = backlog_get_next_fix();
+			if (backlog_fix != 0) {
+				aprs_prepare_buffer(backlog_fix, 1);
+				geofence_aprs_frequency(&current_fix);
+				tx_aprs();
+			}
+			backlog_transmitted = 1;
+		}
+		/* regular APRS transmission */
+		if (seconds > TLM_APRS_INTERVAL) {
+			get_fix_and_measurements();
+			backlog_add_fix(&current_fix);
+			seconds = 0;
+			if (current_fix.type > 2) {
+				/* if no current fix is available, the old fix is transmitted again */
+				aprs_prepare_buffer(&current_fix, 0);
+			}
+			geofence_aprs_frequency(&current_fix);
+			tx_aprs();
+			backlog_transmitted = 0;
+		}
+#endif
 	} /* while(1) */
 } /* main() */
 

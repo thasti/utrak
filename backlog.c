@@ -36,7 +36,7 @@ struct gps_fix* backlog_get_next_fix(void) {
 	int fix_id;
 
 	fix_id = last_fix_id;
-	last_fix_id = (last_fix_id + 1) % BACKLOG_MAX_ENTRIES;
+	last_fix_id = (last_fix_id + BACKLOG_TX_INCREMENT) % BACKLOG_MAX_ENTRIES;
 	
 	if (backlog[fix_id].type > 2)
 		return &backlog[fix_id];

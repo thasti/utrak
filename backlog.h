@@ -3,12 +3,16 @@
 
 #include "fix.h"
 
-/* start of the backlog memory in FRAM 
- * be sure to check the binary size against this!
+/* number of backlog fixes to save*/
+#define BACKLOG_MAX_ENTRIES	96
+/* number of backlog fixes to skip between transmissions.
+ * this distributes transmitted backlog fixes more evenly, so that after long
+ * out-of-range-times the history is filled in an "interleaved" fashion
  *
- * if the program exceeds 13kB, 0xF500 can not be used anymore! 
+ * be sure to set this value so that different fixes get transmitted every time!
+ * if the number of fixes is even, this number must be uneven!
  */
-#define BACKLOG_MAX_ENTRIES	24
+#define BACKLOG_TX_INCREMENT	5
 
 void backlog_add_fix(struct gps_fix *fix);
 struct gps_fix* backlog_get_next_fix(void);

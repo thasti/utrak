@@ -82,11 +82,14 @@ void base91_encode_latlon(char *buf, uint32_t value) {
  * prepares the buffer for APRS transmission with the fix given as a reference.
  * checks for validity of the fix, does not change the buffer if the fix is unsuitable for transmission.
  *
+ * backlog_fix contains a flag marking the fix as a backlog fix, containing a zero TLM sequence ID
+ *
  * always transmits the latest temperature / battery voltage, no historical values!
  *
  */
-inline void aprs_prepare_buffer(struct gps_fix* fix) {
+inline void aprs_prepare_buffer(struct gps_fix* fix, uint8_t backlog_fix) {
 	int16_t temp_aprs = 0;
+	uint16_t seq_tmp;
 	static uint16_t aprs_seqnum = 0;
 
 	if (fix->type < 3)
@@ -100,10 +103,16 @@ inline void aprs_prepare_buffer(struct gps_fix* fix) {
 	base91_encode_latlon(&aprs_buf[APRS_LON_START], 190463.0f * (180.0f + (float)fix->lon/10000000.0f));
 	base91_encode_tlm(&aprs_buf[APRS_ALT_START], logf((float)fix->alt * 3.28f)/logf(1.002f));
 	
-	aprs_seqnum = (aprs_seqnum + 1) % 8281;
+	if (backlog_fix) {
+		seq_tmp = 0;
+	} else {
+		aprs_seqnum = (aprs_seqnum + 1) % 8281;
+		seq_tmp = aprs_seqnum;
+	}
+	
 	temp_aprs = fix->temperature_int + APRS_TLM_TEMP_OFFSET;
 
-	base91_encode_tlm(&aprs_buf[APRS_SEQ_START], aprs_seqnum);
+	base91_encode_tlm(&aprs_buf[APRS_SEQ_START], seq_tmp);
 	base91_encode_tlm(&aprs_buf[APRS_TEMP_START], (uint16_t)temp_aprs);
 	base91_encode_tlm(&aprs_buf[APRS_VOLT_START], fix->voltage_bat);
 	

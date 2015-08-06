@@ -13,12 +13,15 @@
 /* payload telemetry interval
  * can be set for APRS only and for RTTY + APRS
  */
-#define TLM_APRS_INTERVAL	90
+#define TLM_APRS_INTERVAL	180
 #define TLM_RTTY_INTERVAL	40
 /* time offset for APRS backlog transmissions */
 #define TLM_BACKLOG_OFFSET	15
 /* how often a fix should be requested when transmitting blips (after power up) */
 #define BLIP_FIX_INTERVAL	1
+
+/* whether RTTY telemetry shall be transmitted at all */
+//#define TLM_RTTY
 
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
