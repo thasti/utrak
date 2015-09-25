@@ -9,19 +9,20 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x0a"
+#define PAYLOAD_NAME "0x0b"
 /* payload telemetry interval
  * can be set for APRS only and for RTTY + APRS
  */
-#define TLM_APRS_INTERVAL	180
-#define TLM_RTTY_INTERVAL	40
+#define TLM_APRS_INTERVAL	120
+#define TLM_RTTY_INTERVAL	120
 /* time offset for APRS backlog transmissions */
 #define TLM_BACKLOG_OFFSET	15
 /* how often a fix should be requested when transmitting blips (after power up) */
 #define BLIP_FIX_INTERVAL	1
 
 /* whether RTTY telemetry shall be transmitted at all */
-//#define TLM_RTTY
+#define TLM_RTTY
+//#define TLM_APRS_ONLY
 
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
@@ -92,7 +93,7 @@
 /* as some values need fine tuning to keep error in a margin and are constrained, */
 /* these should be recalculated manually when the CPU frequency is changed  */
 /* NCO is running at 26400 hz (lowest common denominator of 1200*2 and 2200*2) */
-#define N_APRS_NCO	305		/* DCO_freq / 26400 */
+#define N_APRS_NCO	303		/* DCO_freq / 26400 */
 
 #define N_TLM	40000 - 1		/* DCO_freq / TLM rate / 2 */
 #define TLM_HZ	100			/* tlm rate in Hz */

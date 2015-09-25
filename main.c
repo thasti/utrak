@@ -104,7 +104,7 @@ int main(void) {
 	si4060_start_tx(0);
 
 	/* TODO remove before flight */
-	backlog_invalidate_fixes();
+	/*backlog_invalidate_fixes(); */
 
 	/* the tracker outputs RF blips while waiting for a GPS fix */
 	while (current_fix.num_svs < 5 && current_fix.type < 3) {
@@ -157,6 +157,7 @@ int main(void) {
 					tx_aprs();
 					si4060_freq_2m_rtty();
 					/* possible switchover to APRS only */
+#ifdef TLM_APRS_ONLY
 					if (!(geofence_slow_tlm_altitude(&current_fix))) {
 						tlm_state = TX_APRS;
 						/* set the tx buffer to not ready to inhibit tx_rtty() from sending */
@@ -164,6 +165,9 @@ int main(void) {
 					} else {
 						tlm_init();	/* starts the RTTY transmission */
 					}
+#else
+					tlm_init();
+#endif
 					backlog_transmitted = 0;
 				}
 				tx_rtty();
