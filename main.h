@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x0b"
+#define PAYLOAD_NAME "0x0c"
 /* payload telemetry interval
  * can be set for APRS only and for RTTY + APRS
  */
