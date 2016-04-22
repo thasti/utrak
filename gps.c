@@ -2,6 +2,8 @@
 #include <inttypes.h>
 #include "fix.h"
 
+void gps_startup_delay(void);
+
 /* 
  * gps_transmit_string
  *
@@ -130,7 +132,14 @@ void gps_get_fix(struct gps_fix *fix) {
 	static uint8_t response[92];	/* PVT response length is 92 bytes */
 	char pvt[] = {0xB5, 0x62, 0x01, 0x07, 0x00, 0x00, 0x08, 0x19};
 	int32_t alt_tmp;
+		
+	/* wake up from sleep */
+	while (!(UCA0IFG&UCTXIFG));
+	UCA0TXBUF = 0xFF;
+	while (!(UCA0IFG&UCTXIFG));
+	gps_startup_delay();
 
+	/* request position */
 	gps_transmit_string(pvt, sizeof(pvt));
 	gps_receive_payload(0x01, 0x07, response);
 
@@ -262,9 +271,9 @@ uint8_t gps_set_power_save(void) {
 	char powersave[] = {
 		0xB5, 0x62, 0x06, 0x3B, 44, 0,	/* UBX-CFG-PM2 */
 		0x01, 0x00, 0x00, 0x00, 	/* v1, reserved 1..3 */
-		0x00, 0b00010000, 0b00000010, 0x00, /* cyclic tracking, update ephemeris */
-		0x10, 0x27, 0x00, 0x00,		/* update period, ms */
-		0x10, 0x27, 0x00, 0x00,		/* search period, ms */
+		0x00, 0b00010000, 0b00000000, 0x00, /* on/off-mode, update ephemeris */
+		0xC0, 0xD4, 0x01, 0x00,		/* update period, ms, 120s */
+		0xC0, 0xD4, 0x01, 0x00,		/* search period, ms, 120s */
 		0x00, 0x00, 0x00, 0x00,		/* grid offset */
 		0x00, 0x00,			/* on-time after first fix */
 		0x01, 0x00,			/* minimum acquisition time */
@@ -273,7 +282,7 @@ uint8_t gps_set_power_save(void) {
 		0x00, 0x00, 0x00, 0x00,		/* reserved 7 */
 		0x00, 0x00, 0x00, 0x00,		/* reserved 8,9,10 */
 		0x00, 0x00, 0x00, 0x00,		/* reserved 11 */
-		0xef, 0x29
+		0xc0, 0x93
 	};
 
 	gps_transmit_string(powersave, sizeof(powersave));

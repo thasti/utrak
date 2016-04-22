@@ -44,7 +44,7 @@ void aprs_init(void);
 
 /*
  * buffer length
- * example: /ddhhmmz/xxxxyyyyOaa1|ss0011|
+ * example: /ddhhmmz/xxxxyyyyOaa1|ss001122|
  * 1 report indicator (real time, no APRS messaging)
  * 2 + 2 + 2 + 1: day / hour / minute / zulu time indicator
  * 1 symbol table
