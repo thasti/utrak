@@ -30,11 +30,11 @@ void hw_init(void) {
 	CSCTL4 = XT1OFF + XT2OFF;				/* disable oscillators */
 
 	/* GPIO init Port 1 */
-	P1OUT &= ~(LED_A + LED_K);
-	P1DIR = SI_SHDN + SI_DATA + LED_A + LED_K;		/* GPIOs for output */
-	P1SEL1 |= ADC_IN + MOSI + MISO;				/* USCI_B MOSI, MISO */
+	P1OUT &= ~(LED_A);
+	P1DIR = SI_SHDN + SI_DATA + LED_A;			/* GPIOs for output */
+	P1SEL1 |= VBAT_IN + VSOL_IN + MOSI + MISO;		/* USCI_B MOSI, MISO */
 	P1SEL1 &= ~(SI_SHDN + SI_DATA);
-	P1SEL0 |= ADC_IN;
+	P1SEL0 |= VBAT_IN + VSOL_IN;
 	P1SEL0 &= ~(SI_SHDN + SI_DATA + MOSI + MISO);	/* USCI_B MOSI, MISO */
 
 	/* GPIO init Port 2 */
@@ -146,6 +146,7 @@ inline void aprs_timer_disable(void) {
  * get_battery_voltage
  *
  * reads ADC channel 1, where the lithium cell is connected
+ * for solar LiPo, a nominal voltage of 4.2V corresponds to 1.25V
  *
  * returns:	the voltage in millivolts (3000 = 3000mV = 3,0V)
  */
@@ -157,6 +158,48 @@ uint16_t get_battery_voltage(void) {
 	ADC10CTL1 = ADC10SHP + ADC10SSEL0 + ADC10SSEL1;		/* ADCCLK = SMCLK */
 	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
 	ADC10MCTL0 = ADC10INCH_2;		/* A1 ADC input select; Vref=AVCC */
+	ADC10IE = ADC10IE0;			/* Enable ADC conv complete interrupt */
+	__delay_cycles(20000);			/* Delay for Ref to settle */
+	voltage = 0;
+	for (i = 0; i < 10; i++) {
+		ADC10CTL0 |= ADC10ENC + ADC10SC;	/* Sampling and conversion start */
+		__bis_SR_register(CPUOFF + GIE);	/* LPM0, ADC10_ISR will force exit */
+		/* take ADC reading */
+		voltage += adc_result * 32 / 10;		/* convert to mV */
+	}
+	voltage /= 10;
+#ifdef SOLAR_POWER
+	/* assumes that the nominal max voltage here is 1.25V
+	 * 1250 mV * 47 / 14 = 4196 mV - good accuracy
+	 * 1380 * 47 = 64860, enough headroom for clipping it
+	 */
+	if (voltage > 1380) {
+		voltage = 1380;
+	}
+	voltage = voltage * 47 / 14;
+#endif
+	/* disable ADC */
+	ADC10IE &= ~ADC10IE0;			/* Enable ADC conv complete interrupt */
+	ADC10CTL0 &= ~ADC10ON;			/* ADC10 off */
+
+	return voltage;
+}
+
+/*
+ * get_solar_voltage
+ *
+ * reads ADC channel ?, where the solar cell is connected
+ *
+ * returns:	the voltage in millivolts (3000 = 3000mV = 3,0V)
+ */
+uint16_t get_solar_voltage(void) {
+	uint16_t i;
+	uint16_t voltage;
+	/* enable ADC */
+	ADC10CTL0 = ADC10SHT_2 + ADC10ON;	/* ADC10ON, S&H=16 ADC clks */
+	ADC10CTL1 = ADC10SHP + ADC10SSEL0 + ADC10SSEL1;		/* ADCCLK = SMCLK */
+	ADC10CTL2 = ADC10RES;			/* 10-bit conversion results */
+	ADC10MCTL0 = ADC10INCH_1;		/* A1 ADC input select; Vref=AVCC */
 	ADC10IE = ADC10IE0;			/* Enable ADC conv complete interrupt */
 	__delay_cycles(20000);			/* Delay for Ref to settle */
 	voltage = 0;

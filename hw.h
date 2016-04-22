@@ -9,6 +9,7 @@ void disable_xt1(void);
 void aprs_timer_enable(void);
 void aprs_timer_disable(void);
 uint16_t get_battery_voltage(void);
+uint16_t get_solar_voltage(void);
 int16_t get_die_temperature(void);
 
 #endif

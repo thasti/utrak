@@ -49,6 +49,7 @@ void get_fix_and_measurements(void) {
 	gps_get_fix(&current_fix);
 	current_fix.temperature_int = get_die_temperature();
 	current_fix.voltage_bat = get_battery_voltage();
+	current_fix.voltage_sol = get_solar_voltage();
 }
 
 int main(void) {

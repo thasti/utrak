@@ -135,6 +135,9 @@ void prepare_tx_buffer(void) {
 	
 	i16toa(current_fix.voltage_bat, VOLT_LENGTH, &tx_buf[TX_BUF_VOLT_START]);
 	tx_buf[TX_BUF_VOLT_START + VOLT_LENGTH] = ',';
+	
+	i16toa(current_fix.voltage_sol, VSOL_LENGTH, &tx_buf[TX_BUF_VSOL_START]);
+	tx_buf[TX_BUF_VSOL_START + VSOL_LENGTH] = ',';
 
 	if (current_fix.temperature_int < 0) {
 		tx_buf[TX_BUF_TEMP_START] = '-';

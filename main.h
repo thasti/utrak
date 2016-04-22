@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x0c"
+#define PAYLOAD_NAME "0x0d"
 /* payload telemetry interval
  * can be set for APRS only and for RTTY + APRS
  */
@@ -23,6 +23,7 @@
 /* whether RTTY telemetry shall be transmitted at all */
 #define TLM_RTTY
 //#define TLM_RTTY_ONLY
+#define SOLAR_POWER
 
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"
@@ -39,6 +40,7 @@
 #define SAT_LENGTH		2
 #define ALT_LENGTH_MAX		5
 #define VOLT_LENGTH		4
+#define VSOL_LENGTH		4
 #define TEMP_LENGTH		2
 #define CHECKSUM_LENGTH		4
 /* sentence id is variable length */
@@ -55,8 +57,9 @@
 #define TX_BUF_ALT_START	TX_BUF_LON_START + LON_LENGTH + 1 + 1
 #define TX_BUF_SAT_START	TX_BUF_ALT_START + tlm_alt_length + 1
 #define TX_BUF_VOLT_START	TX_BUF_SAT_START + SAT_LENGTH + 1
+#define TX_BUF_VSOL_START	TX_BUF_VOLT_START + VOLT_LENGTH + 1
 /* temperature field is one char longer for +/- */
-#define TX_BUF_TEMP_START	TX_BUF_VOLT_START + VOLT_LENGTH + 1
+#define TX_BUF_TEMP_START	TX_BUF_VSOL_START + VSOL_LENGTH + 1
 #define TX_BUF_CHECKSUM_START	TX_BUF_TEMP_START + TEMP_LENGTH + 1 + 1
 #define TX_BUF_POSTFIX_START	TX_BUF_CHECKSUM_START + CHECKSUM_LENGTH
 #define TX_BUF_FRAME_END	TX_BUF_POSTFIX_START + sizeof(TX_BUF_POSTFIX) - 1;
@@ -66,7 +69,7 @@
 
 #define TX_BUF_MAX_LENGTH	sizeof(SYNC_PREFIX "$$" PAYLOAD_NAME) - 1 + 1 + \
 				SENT_ID_LENGTH_MAX + 1 + TIME_LENGTH + 1 + LAT_LENGTH + 1 + LON_LENGTH + 1 + \
-				ALT_LENGTH_MAX + 1 + SAT_LENGTH + 1 + VOLT_LENGTH + 1 + TEMP_LENGTH + \
+				ALT_LENGTH_MAX + 1 + SAT_LENGTH + 1 + VOLT_LENGTH + 1 + VSOL_LENGTH + 1 + TEMP_LENGTH + \
 				sizeof("*") - 1 + CHECKSUM_LENGTH + TX_BUF_POSTFIX_LENGTH
 
 /* buffer sizes */
@@ -74,8 +77,8 @@
 
 /* Port 1 */
 #define LED_A	BIT0
-#define LED_K	BIT1
-#define ADC_IN	BIT2
+#define VSOL_IN	BIT1
+#define VBAT_IN	BIT2
 #define SI_SHDN	BIT3
 #define SI_DATA	BIT4
 #define MOSI	BIT6

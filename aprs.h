@@ -14,7 +14,7 @@ void aprs_init(void);
 /* APRS destination SSID is 0 */
 #define DST_SSID	0
 /* APRS source SSID */
-#define SRC_SSID	12
+#define SRC_SSID	13
 /* WIDE1-x SSID */
 #define WIDE_SSID	1
 
@@ -56,9 +56,10 @@ void aprs_init(void);
  * 2 tlm sequence id
  * 2 tlm temperature
  * 2 tlm battery
+ * 2 tlm solar
  * 1 tlm delimiter
  */
-#define APRS_BUF_LEN	1 + 7 + 1 + 4 + 4 + 1 + 3 + 1 + 2 + 2 + 2 + 1
+#define APRS_BUF_LEN	1 + 7 + 1 + 4 + 4 + 1 + 3 + 1 + 2 + 2 + 2 + 2 + 1
 
 #define APRS_TIME_START	1
 #define APRS_TIME_LEN	6
@@ -74,6 +75,8 @@ void aprs_init(void);
 #define APRS_TEMP_LEN	1
 #define APRS_VOLT_START	26
 #define APRS_VOLT_LEN	1
+#define APRS_VSOL_START	28
+#define APRS_VSOL_LEN	1
 
 #define AX25_SFLAGS	75
 #define AX25_EFLAGS	2

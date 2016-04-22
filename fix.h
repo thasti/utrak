@@ -19,6 +19,7 @@ struct gps_fix {
 	int32_t lon;		/* longitude in deg * 10^7, range -180 .. +180 * 10^7 */
 	uint16_t alt;		/* altitude in m, range 0m, up to ~40000m, clamped */
 	uint16_t voltage_bat;	/* battery voltage in mV, range 0 .. 3300mV */
+	uint16_t voltage_sol;	/* solar voltage in mV, range 0 .. 3300mV */
 	int16_t temperature_int;/* tracker interval temperature in °C, range -100 .. 100 */
 };
 

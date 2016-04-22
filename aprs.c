@@ -15,7 +15,7 @@
  * the APRS data buffer
  * contains ASCII data
  */
-char aprs_buf[APRS_BUF_LEN] = "/ddhhmmz/xxxxyyyyOaa1|ss0011|";
+char aprs_buf[APRS_BUF_LEN] = "/ddhhmmz/xxxxyyyyOaa1|ss001122|";
 
 extern volatile uint16_t aprs_bit;
 extern volatile uint16_t aprs_tick;
@@ -115,6 +115,7 @@ inline void aprs_prepare_buffer(struct gps_fix* fix, uint8_t backlog_fix) {
 	base91_encode_tlm(&aprs_buf[APRS_SEQ_START], seq_tmp);
 	base91_encode_tlm(&aprs_buf[APRS_TEMP_START], (uint16_t)temp_aprs);
 	base91_encode_tlm(&aprs_buf[APRS_VOLT_START], fix->voltage_bat);
+	base91_encode_tlm(&aprs_buf[APRS_VSOL_START], fix->voltage_sol);
 	
 	calculate_fcs();
 }
