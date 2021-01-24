@@ -31,7 +31,7 @@ void hw_init(void) {
 
 	/* GPIO init Port 1 */
 	P1OUT &= ~(LED_A);
-	P1DIR = SI_SHDN + SI_DATA + LED_A;			/* GPIOs for output */
+	P1DIR = SI_SHDN + SI_DATA;			/* GPIOs for output */
 	P1SEL1 |= VBAT_IN + VSOL_IN + MOSI + MISO;		/* USCI_B MOSI, MISO */
 	P1SEL1 &= ~(SI_SHDN + SI_DATA);
 	P1SEL0 |= VBAT_IN + VSOL_IN;

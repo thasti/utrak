@@ -82,7 +82,7 @@ int main(void) {
 	while(!(gps_disable_nmea_output()));
 	while(!(gps_set_gps_only()));
 	while(!(gps_set_airborne_model()));
-	while(!(gps_set_power_save()));
+    while(!(gps_set_power_save()));
 	while(!(gps_power_save(0)));
 	while(!(gps_save_settings()));
 	
