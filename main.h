@@ -9,7 +9,7 @@
 #define MAIN_H_
 
 /* payload name */
-#define PAYLOAD_NAME "0x12"
+#define PAYLOAD_NAME "DO9EHP/AM"
 /* payload telemetry interval
  * can be set for APRS only and for RTTY + APRS
  */
@@ -23,7 +23,7 @@
 /* whether RTTY telemetry shall be transmitted at all */
 #define TLM_RTTY
 //#define TLM_RTTY_ONLY
-#define SOLAR_POWER
+//#define SOLAR_POWER
 
 /* telemetry string prefix for RX syncronisation */
 #define SYNC_PREFIX		"   $$"

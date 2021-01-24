@@ -105,7 +105,7 @@ int main(void) {
 	si4060_start_tx(0);
 
 	/* TODO remove before flight */
-	/*backlog_invalidate_fixes(); */
+	backlog_invalidate_fixes();
 
 	/* the tracker outputs RF blips while waiting for a GPS fix */
 	while (current_fix.num_svs < 5 && current_fix.type < 3) {

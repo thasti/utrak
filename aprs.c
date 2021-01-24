@@ -23,7 +23,7 @@ extern volatile uint16_t aprs_baud_tick;
 
 const unsigned char aprs_header[APRS_HEADER_LEN] = {
 	'A'*2, 'P'*2, 'R'*2, 'S'*2, ' '*2, ' '*2, SSID_RESC + (DST_SSID << 1),
-	'D'*2, 'K'*2, '3'*2, 'S'*2, 'B'*2, ' '*2, SSID_RESC + (SRC_SSID << 1),
+	'D'*2, 'O'*2, '9'*2, 'E'*2, 'H'*2, 'P'*2, SSID_RESC + (SRC_SSID << 1),
 	'W'*2, 'I'*2, 'D'*2, 'E'*2, '1'*2, ' '*2, SSID_RESC + (WIDE_SSID << 1) + HEADER_END,
 	CONTROL_UI, PID_NONE};
 
